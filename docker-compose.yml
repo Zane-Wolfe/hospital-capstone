@@ -1,0 +1,45 @@
+services:
+  # --- Database ---
+  influxdb:
+    image: influxdb:2.7
+    container_name: audio_event_db
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb2_data:/var/lib/influxdb2
+      - influxdb2_config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=my_admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=my_secure_password123
+      - DOCKER_INFLUXDB_INIT_ORG=hospital_monitoring_org
+      - DOCKER_INFLUXDB_INIT_BUCKET=hospital_sounds
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+    networks:
+      - monitoring_net
+
+  # --- Dashboard ---
+  grafana:
+    image: grafana/grafana:latest
+    container_name: audio_dashboard
+    ports:
+      - "3000:3000"
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # This line links the config file below to the container
+      - ./database/grafana-provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - monitoring_net
+
+volumes:
+  influxdb2_data:
+  influxdb2_config:
+  grafana_data:
+
+networks:
+  monitoring_net:

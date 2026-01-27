@@ -1,0 +1,13 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB_Hospital
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: hospital_monitoring_org
+      defaultBucket: hospital_sounds
+    secureJsonData:
+      token: my-super-secret-auth-token
