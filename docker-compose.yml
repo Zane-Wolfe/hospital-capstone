@@ -18,28 +18,41 @@ services:
     networks:
       - monitoring_net
 
-  # --- Dashboard ---
-  grafana:
-    image: grafana/grafana:latest
-    container_name: audio_dashboard
+  # --- Backend API ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: audio_backend
     ports:
-      - "3000:3000"
+      - "8000:8000"
     depends_on:
       - influxdb
-    volumes:
-      - grafana_data:/var/lib/grafana
-      # This line links the config file below to the container
-      - ./database/grafana-provisioning:/etc/grafana/provisioning
+    env_file:
+      - .env
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - INFLUXDB_URL=http://influxdb:8086
+    volumes:
+      - ./model_training:/app/models:ro
+    networks:
+      - monitoring_net
+
+  # --- Frontend Web UI ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: audio_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
     networks:
       - monitoring_net
 
 volumes:
   influxdb2_data:
   influxdb2_config:
-  grafana_data:
 
 networks:
   monitoring_net:
