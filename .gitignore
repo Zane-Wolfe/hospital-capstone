@@ -1,6 +1,5 @@
 */.venv
 */*/.venv
-/model_training/
 
 # Environment files
 .env
@@ -25,3 +24,9 @@ backend/.venv/
 .vscode/
 *.swp
 *.swo
+
+# Model training data
+model_training/**
+!model_training/
+!model_training/hospital_sound_classifier.pth
+
