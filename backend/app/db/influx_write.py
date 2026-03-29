@@ -96,3 +96,71 @@ def write_audio_events(
             successful += 1
 
     return successful
+
+
+def write_audio_level(
+    sensor_id: str,
+    location: str,
+    loudness_db: float,
+    timestamp: datetime | None = None,
+) -> bool:
+    """Write a continuous audio level sample to InfluxDB for every processed segment."""
+    settings = get_settings()
+
+    if timestamp is None:
+        timestamp = datetime.now(timezone.utc)
+
+    point = (
+        Point("audio_level")
+        .tag("sensor_id", sensor_id)
+        .tag("location", location)
+        .field("loudness_db", loudness_db)
+        .time(timestamp)
+    )
+
+    try:
+        write_api = get_write_api()
+        write_api.write(bucket=settings.influxdb_bucket, record=point)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to write audio level to InfluxDB: {e}")
+        return False
+
+
+def write_heartbeat(
+    sensor_id: str,
+    location: str,
+    battery_percent: float | None = None,
+    bandwidth_kbps: float | None = None,
+    signal_strength_dbm: float | None = None,
+    timestamp: datetime | None = None,
+) -> bool:
+    """Write heartbeat metrics to InfluxDB for time series tracking."""
+    settings = get_settings()
+
+    if timestamp is None:
+        timestamp = datetime.now(timezone.utc)
+
+    point = (
+        Point("device_heartbeat")
+        .tag("sensor_id", sensor_id)
+        .tag("location", location or "unknown")
+    )
+
+    # Add fields (only if provided)
+    if battery_percent is not None:
+        point = point.field("battery_percent", battery_percent)
+    if bandwidth_kbps is not None:
+        point = point.field("bandwidth_kbps", bandwidth_kbps)
+    if signal_strength_dbm is not None:
+        point = point.field("signal_strength_dbm", signal_strength_dbm)
+
+    point = point.time(timestamp)
+
+    try:
+        write_api = get_write_api()
+        write_api.write(bucket=settings.influxdb_bucket, record=point)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to write heartbeat to InfluxDB: {e}")
+        return False

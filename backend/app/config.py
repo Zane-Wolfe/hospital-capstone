@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     influxdb_org: str
     influxdb_bucket: str
 
+    # PostgreSQL
+    postgres_url: str = "postgresql+asyncpg://hospital_user:hospital_password@postgres:5432/hospital_monitor"
+
     # Authentication
     auth_username: str = "admin"
     auth_password: str
@@ -28,7 +31,10 @@ class Settings(BaseSettings):
 
     # Audio Settings
     audio_sample_rate: int = 16000
-    audio_segment_duration_sec: float = 1.0
+    audio_segment_duration_sec: float = 3.0
+
+    # TCP Ingestion
+    tcp_ingest_port: int = 8001
 
     @field_validator('inference_confidence_threshold', mode='before')
     @classmethod

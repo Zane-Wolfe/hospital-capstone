@@ -18,6 +18,7 @@ __pycache__/
 *.so
 .Python
 backend/.venv/
+backend/scripts/venv
 
 # IDE
 .idea/
@@ -30,3 +31,4 @@ model_training/**
 !model_training/
 !model_training/hospital_sound_classifier.pth
 
+CLAUDE.md

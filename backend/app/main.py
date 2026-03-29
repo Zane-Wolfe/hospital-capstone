@@ -7,12 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.db.influx import close_influx_client
+from app.db.postgres import init_postgres, close_postgres
 from app.auth.router import router as auth_router
 from app.events.router import router as events_router
 from app.events.websocket import router as ws_router
 from app.sensors.router import router as sensors_router
 from app.ingest.router import router as ingest_router
+from app.floor_plans.router import router as floor_plans_router
+from app.device_positions.router import router as device_positions_router
+from app.device_metrics.router import router as device_metrics_router
 from app.inference.model import init_inference, close_inference, get_inference
+from app.ingest.tcp_server import start_tcp_server, stop_tcp_server
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +26,13 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     settings = get_settings()
+
+    # Initialize PostgreSQL
+    try:
+        await init_postgres()
+        logger.info("PostgreSQL initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize PostgreSQL: {e}")
 
     # Load ML model if path exists
     model_path = Path(settings.model_path)
@@ -40,11 +52,20 @@ async def lifespan(app: FastAPI):
             f"ML model file not found at {model_path}. Ingestion will not work."
         )
 
+    # Start TCP audio server
+    try:
+        await start_tcp_server()
+        logger.info(f"TCP audio server started on port {settings.tcp_ingest_port}")
+    except Exception as e:
+        logger.error(f"Failed to start TCP server: {e}")
+
     yield
 
     # Shutdown
+    await stop_tcp_server()
     close_inference()
     close_influx_client()
+    await close_postgres()
 
 
 app = FastAPI(
@@ -68,6 +89,9 @@ app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(events_router, prefix="/api/events", tags=["events"])
 app.include_router(sensors_router, prefix="/api/sensors", tags=["sensors"])
 app.include_router(ingest_router, prefix="/api/ingest", tags=["ingest"])
+app.include_router(floor_plans_router, prefix="/api/floor-plans", tags=["floor-plans"])
+app.include_router(device_positions_router, prefix="/api/device-positions", tags=["device-positions"])
+app.include_router(device_metrics_router, prefix="/api/device-metrics", tags=["device-metrics"])
 app.include_router(ws_router, tags=["websocket"])
 
 

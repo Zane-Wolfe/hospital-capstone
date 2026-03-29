@@ -10,6 +10,13 @@ import {
   EventFilters,
 } from '../api/events'
 
+/**
+ * Sort events by time descending (newest first)
+ */
+function sortEventsByTimeDesc(events: AudioEvent[]): AudioEvent[] {
+  return [...events].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+}
+
 export function useEvents(filters: EventFilters = {}) {
   const [events, setEvents] = useState<AudioEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -20,7 +27,8 @@ export function useEvents(filters: EventFilters = {}) {
     setError(null)
     try {
       const data = await getEvents(filters)
-      setEvents(data)
+      // Sort events by time descending (newest first)
+      setEvents(sortEventsByTimeDesc(data))
     } catch (err) {
       setError('Failed to fetch events')
     } finally {

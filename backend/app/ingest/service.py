@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.inference.model import get_inference
-from app.db.influx_write import write_audio_events
+from app.db.influx_write import write_audio_events, write_audio_level
 from app.events.websocket import broadcast_new_event
 from app.config import get_settings
 
@@ -65,6 +65,14 @@ async def process_audio_segment(
     detected_events = result["detected_events"]
     loudness_db = result["loudness_db"]
     timestamp = datetime.now(timezone.utc)
+
+    # Always write audio level for continuous dB tracking in dashboards
+    write_audio_level(
+        sensor_id=sensor_id,
+        location=location,
+        loudness_db=loudness_db,
+        timestamp=timestamp,
+    )
 
     # Write to InfluxDB if events were detected
     if detected_events:

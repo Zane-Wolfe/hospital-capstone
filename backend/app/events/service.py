@@ -1,7 +1,14 @@
 from datetime import datetime
 from app.db.influx import get_query_api
 from app.config import get_settings
-from app.events.schemas import AudioEvent, EventStats, TimeSeriesPoint, HeatmapPoint
+from app.events.schemas import (
+    AudioEvent,
+    EventStats,
+    TimeSeriesPoint,
+    HeatmapPoint,
+    PositionalHeatmapPoint,
+    EventTypeTimeSeries,
+)
 
 
 def _build_base_query(time_range: str = "-1h") -> str:
@@ -219,4 +226,105 @@ def get_heatmap_data(time_range: str = "-1h") -> list[HeatmapPoint]:
             avg_loudness=round(data["total_loudness"] / data["count"], 2) if data["count"] > 0 else 0.0,
         )
         for loc, data in location_data.items()
+    ]
+
+
+def get_heatmap_by_position(
+    device_positions: list[dict],
+    time_range: str = "-1h",
+    metric: str = "count",
+) -> list[PositionalHeatmapPoint]:
+    """
+    Get heatmap data with positions from PostgreSQL.
+    device_positions: list of dicts with sensor_id, x_coord, y_coord
+    metric: 'db' for loudness, 'count' for event count, or event type name
+    """
+    events = get_events(time_range=time_range, limit=10000)
+
+    # Group events by sensor_id
+    sensor_data: dict[str, dict] = {}
+    for event in events:
+        if event.sensor_id not in sensor_data:
+            sensor_data[event.sensor_id] = {
+                "count": 0,
+                "total_loudness": 0.0,
+                "event_types": {},
+            }
+        sensor_data[event.sensor_id]["count"] += 1
+        sensor_data[event.sensor_id]["total_loudness"] += event.loudness_db
+        et = event.event_type
+        sensor_data[event.sensor_id]["event_types"][et] = (
+            sensor_data[event.sensor_id]["event_types"].get(et, 0) + 1
+        )
+
+    # Map to positions
+    results = []
+    for pos in device_positions:
+        sensor_id = pos["sensor_id"]
+        data = sensor_data.get(sensor_id, {"count": 0, "total_loudness": 0.0, "event_types": {}})
+
+        if metric == "db":
+            value = (
+                data["total_loudness"] / data["count"]
+                if data["count"] > 0
+                else 0.0
+            )
+        elif metric == "count":
+            value = float(data["count"])
+        else:
+            # metric is an event type name
+            value = float(data["event_types"].get(metric, 0))
+
+        results.append(
+            PositionalHeatmapPoint(
+                sensor_id=sensor_id,
+                x_coord=pos["x_coord"],
+                y_coord=pos["y_coord"],
+                value=value,
+                metric_type=metric,
+            )
+        )
+
+    return results
+
+
+def get_events_by_type_timeseries(
+    time_range: str = "-1h",
+    window: str = "5m",
+) -> list[EventTypeTimeSeries]:
+    """Get time series for each event type separately."""
+    settings = get_settings()
+    query_api = get_query_api()
+
+    query = f'''
+        from(bucket: "{settings.influxdb_bucket}")
+        |> range(start: {time_range})
+        |> filter(fn: (r) => r["_measurement"] == "audio_events")
+        |> filter(fn: (r) => r["_field"] == "confidence")
+        |> group(columns: ["event_type"])
+        |> aggregateWindow(every: {window}, fn: count, createEmpty: false)
+    '''
+
+    tables = query_api.query(query, org=settings.influxdb_org)
+
+    # Group by event type
+    event_type_data: dict[str, list[TimeSeriesPoint]] = {}
+    for table in tables:
+        for record in table.records:
+            event_type = record.values.get("event_type", "unknown")
+            if event_type not in event_type_data:
+                event_type_data[event_type] = []
+            event_type_data[event_type].append(
+                TimeSeriesPoint(
+                    time=record.get_time(),
+                    value=float(record.get_value() or 0),
+                )
+            )
+
+    return [
+        EventTypeTimeSeries(
+            event_type=et,
+            data=sorted(points, key=lambda p: p.time),
+        )
+        for et, points in event_type_data.items()
     ]

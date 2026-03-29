@@ -10,42 +10,108 @@ from app.inference.processor import AudioProcessor
 logger = logging.getLogger(__name__)
 
 
+class BasicBlock(nn.Module):
+    """Basic residual block for ResNet18."""
+
+    expansion = 1
+
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
+        super().__init__()
+        self.conv1 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False
+        )
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False
+        )
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+        # Downsample layer for skip connection when dimensions change
+        self.downsample = None
+        if stride != 1 or in_channels != out_channels:
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels),
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+
+
+class ResNet18(nn.Module):
+    """ResNet18 implementation for audio classification."""
+
+    def __init__(self, num_classes: int = 7, in_channels: int = 1):
+        super().__init__()
+
+        self.in_planes = 64
+
+        # Initial convolution layer (modified for 1-channel input)
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        # Residual layers
+        self.layer1 = self._make_layer(64, 2, stride=1)
+        self.layer2 = self._make_layer(128, 2, stride=2)
+        self.layer3 = self._make_layer(256, 2, stride=2)
+        self.layer4 = self._make_layer(512, 2, stride=2)
+
+        # Classification head
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512, num_classes)
+
+    def _make_layer(self, out_channels: int, num_blocks: int, stride: int) -> nn.Sequential:
+        layers = []
+        layers.append(BasicBlock(self.in_planes, out_channels, stride))
+        self.in_planes = out_channels
+        for _ in range(1, num_blocks):
+            layers.append(BasicBlock(out_channels, out_channels))
+        return nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+
+        return x
+
+
 class SoundClassificationModel(nn.Module):
-    """Conv2D CNN model for sound classification using MelSpectrogram input."""
+    """ResNet18-based model for sound classification using MelSpectrogram input."""
 
     def __init__(self, num_classes: int = 7, n_mels: int = 128):
         super().__init__()
 
         self.n_mels = n_mels
-
-        # Convolutional layers (4 layers: 32→64→128→256)
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(32)
-        self.pool1 = nn.MaxPool2d(2)
-
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.bn2 = nn.BatchNorm2d(64)
-        self.pool2 = nn.MaxPool2d(2)
-
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.bn3 = nn.BatchNorm2d(128)
-        self.pool3 = nn.MaxPool2d(2)
-
-        self.conv4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
-        self.bn4 = nn.BatchNorm2d(256)
-        self.pool4 = nn.MaxPool2d(2)
-
-        # Global average pooling
-        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
-
-        # Fully connected layers: 256→128→64→num_classes
-        self.fc1 = nn.Linear(256, 128)
-        self.dropout1 = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(128, 64)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc3 = nn.Linear(64, num_classes)
-
-        self.relu = nn.ReLU()
+        self.base_model = ResNet18(num_classes=num_classes, in_channels=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -57,34 +123,7 @@ class SoundClassificationModel(nn.Module):
         Returns:
             Output logits of shape (batch_size, num_classes)
         """
-        # Conv block 1
-        x = self.relu(self.bn1(self.conv1(x)))
-        x = self.pool1(x)
-
-        # Conv block 2
-        x = self.relu(self.bn2(self.conv2(x)))
-        x = self.pool2(x)
-
-        # Conv block 3
-        x = self.relu(self.bn3(self.conv3(x)))
-        x = self.pool3(x)
-
-        # Conv block 4
-        x = self.relu(self.bn4(self.conv4(x)))
-        x = self.pool4(x)
-
-        # Global average pooling
-        x = self.global_pool(x)
-        x = x.view(x.size(0), -1)
-
-        # Fully connected layers
-        x = self.relu(self.fc1(x))
-        x = self.dropout1(x)
-        x = self.relu(self.fc2(x))
-        x = self.dropout2(x)
-        x = self.fc3(x)
-
-        return x
+        return self.base_model(x)
 
 
 class SoundInference:

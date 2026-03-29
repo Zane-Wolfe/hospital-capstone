@@ -27,3 +27,16 @@ class HeatmapPoint(BaseModel):
     location: str
     count: int
     avg_loudness: float
+
+
+class PositionalHeatmapPoint(BaseModel):
+    sensor_id: str
+    x_coord: float
+    y_coord: float
+    value: float
+    metric_type: str  # 'db', 'count', or event type name
+
+
+class EventTypeTimeSeries(BaseModel):
+    event_type: str
+    data: list[TimeSeriesPoint]

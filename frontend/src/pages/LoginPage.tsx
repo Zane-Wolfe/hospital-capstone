@@ -9,7 +9,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard')
+      navigate('/summary')
     }
   }, [isAuthenticated, navigate])
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="bg-white py-8 px-6 shadow rounded-lg">
-          <LoginForm onSuccess={() => navigate('/dashboard')} />
+          <LoginForm onSuccess={() => navigate('/summary')} />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import client from './client'
-import type { AudioEvent, EventStats, TimeSeriesPoint, HeatmapPoint } from '../types'
+import type { AudioEvent, EventStats, TimeSeriesPoint, HeatmapPoint, EventTypeTimeSeries } from '../types'
 
 export interface EventFilters {
   time_range?: string
@@ -63,5 +63,15 @@ export const getConfidenceTimeseries = async (
 
 export const getHeatmapData = async (timeRange: string = '-1h'): Promise<HeatmapPoint[]> => {
   const response = await client.get<HeatmapPoint[]>(`/api/events/heatmap?time_range=${timeRange}`)
+  return response.data
+}
+
+export const getEventsByTypeTimeseries = async (
+  timeRange: string = '-1h',
+  window: string = '5m'
+): Promise<EventTypeTimeSeries[]> => {
+  const response = await client.get<EventTypeTimeSeries[]>(
+    `/api/events/timeseries/by-type?time_range=${timeRange}&window=${window}`
+  )
   return response.data
 }

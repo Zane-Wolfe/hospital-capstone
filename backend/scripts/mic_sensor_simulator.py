@@ -3,7 +3,7 @@
 Microphone Sensor Simulator
 
 Simulates an ESP32 sensor by capturing audio from your microphone
-and sending it to the backend API for classification.
+and streaming it to the backend via TCP for classification.
 
 Requirements:
     pip install sounddevice numpy requests
@@ -15,9 +15,12 @@ Usage:
 """
 
 import argparse
+import json
 import signal
+import socket
 import struct
 import sys
+import threading
 import time
 from datetime import datetime
 
@@ -34,40 +37,53 @@ except ImportError as e:
 
 # Default configuration
 DEFAULT_CONFIG = {
-    "backend_url": "http://localhost:8000/api/ingest/audio",
+    "backend_host": "localhost",
+    "tcp_port": 8001,
+    "http_port": 8000,
     "sensor_id": "mic_simulator",
     "location": "Desktop",
     "api_key": "key123",  # Must match SENSOR_API_KEYS in .env
     "sample_rate": 16000,
-    "segment_duration": 1.0,  # seconds
+    "segment_duration": 1.0,  # seconds - must match backend AUDIO_SEGMENT_DURATION_SEC
     "channels": 1,
+    "heartbeat_interval": 30,  # seconds
 }
 
 
 class MicrophoneSensor:
-    """Simulates an ESP32 sensor using the computer's microphone."""
+    """Simulates an ESP32 sensor using the computer's microphone via TCP streaming."""
 
     def __init__(
         self,
-        backend_url: str,
+        host: str,
+        tcp_port: int,
+        http_port: int,
         sensor_id: str,
         location: str,
         api_key: str,
         sample_rate: int = 16000,
         segment_duration: float = 1.0,
         device: int | None = None,
+        heartbeat_interval: int = 30,
     ):
-        self.backend_url = backend_url
+        self.host = host
+        self.tcp_port = tcp_port
+        self.http_port = http_port
         self.sensor_id = sensor_id
         self.location = location
         self.api_key = api_key
         self.sample_rate = sample_rate
         self.segment_duration = segment_duration
         self.device = device
+        self.heartbeat_interval = heartbeat_interval
         self.running = False
+        self._socket: socket.socket | None = None
+        self._heartbeat_thread: threading.Thread | None = None
 
         # Calculate samples per segment
         self.samples_per_segment = int(sample_rate * segment_duration)
+        # 16-bit PCM = 2 bytes per sample
+        self.bytes_per_segment = self.samples_per_segment * 2
 
     def _audio_to_pcm_bytes(self, audio: np.ndarray) -> bytes:
         """Convert numpy audio array to 16-bit PCM bytes."""
@@ -82,70 +98,110 @@ class MicrophoneSensor:
         # Pack as little-endian 16-bit integers
         return struct.pack(f"<{len(audio_int16)}h", *audio_int16)
 
-    def _send_audio(self, pcm_bytes: bytes) -> dict | None:
-        """Send audio segment to backend API."""
+    def _connect_tcp(self) -> bool:
+        """Establish TCP connection and authenticate."""
+        try:
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.connect((self.host, self.tcp_port))
+            self._socket.settimeout(10.0)
+
+            # Send handshake
+            handshake = {
+                "sensor_id": self.sensor_id,
+                "api_key": self.api_key,
+                "location": self.location,
+            }
+            handshake_bytes = json.dumps(handshake).encode("utf-8") + b"\n"
+            self._socket.sendall(handshake_bytes)
+
+            print()
+            print()
+            print(handshake)
+            print()
+            print()
+
+
+            # Read response
+            response_data = b""
+            while b"\n" not in response_data:
+                chunk = self._socket.recv(1024)
+                if not chunk:
+                    raise ConnectionError("Connection closed during handshake")
+                response_data += chunk
+
+            response = json.loads(response_data.decode("utf-8").strip())
+
+            if response.get("status") == "authenticated":
+                buffer_size = response.get("buffer_size_bytes", self.bytes_per_segment)
+                print(f"[OK] Authenticated. Server buffer size: {buffer_size} bytes")
+                # Remove timeout for streaming
+                self._socket.settimeout(None)
+                return True
+            else:
+                error_msg = response.get("message", "Unknown error")
+                print(f"[ERROR] Authentication failed: {error_msg}")
+                return False
+
+        except socket.timeout:
+            print(f"[ERROR] Connection timeout to {self.host}:{self.tcp_port}")
+            return False
+        except ConnectionRefusedError:
+            print(f"[ERROR] Connection refused to {self.host}:{self.tcp_port}")
+            print("        Is the backend running? Try: docker compose up")
+            return False
+        except Exception as e:
+            print(f"[ERROR] TCP connection failed: {e}")
+            return False
+
+    def _disconnect_tcp(self):
+        """Close TCP connection."""
+        if self._socket:
+            try:
+                self._socket.close()
+            except Exception:
+                pass
+            self._socket = None
+
+    def _send_heartbeat(self):
+        """Send HTTP heartbeat to device metrics endpoint."""
+        url = f"http://{self.host}:{self.http_port}/api/device-metrics/heartbeat"
         headers = {
-            "X-API-Key": f"{self.sensor_id}:{self.api_key}",
+            "X-API-Key": self.api_key,
             "X-Sensor-ID": self.sensor_id,
             "X-Location": self.location,
-            "Content-Type": "application/octet-stream",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "battery_percent": 25.0,  # Simulated - always full
+            "bandwidth_kbps": 128.0,   # Simulated
+            "signal_strength_dbm": -50.0,  # Simulated - strong signal
+            "firmware_version": "simulator-1.0",
         }
 
         try:
-            response = requests.post(
-                self.backend_url,
-                headers=headers,
-                data=pcm_bytes,
-                timeout=10,
-            )
+            response = requests.post(url, headers=headers, json=payload, timeout=5)
             response.raise_for_status()
-            return response.json()
-        except requests.exceptions.ConnectionError:
-            print(f"\n[ERROR] Cannot connect to {self.backend_url}")
-            print("        Is the backend running? Try: docker compose up")
-            return None
-        except requests.exceptions.HTTPError as e:
-            print(f"\n[ERROR] HTTP {e.response.status_code}: {e.response.text}")
-            return None
+            print("[OK] Heartbeat sent successfully")
+            return True
         except Exception as e:
-            print(f"\n[ERROR] {e}")
-            return None
+            print(f"[WARN] Heartbeat failed: {e}")
+            return False
 
-    def _format_result(self, result: dict) -> str:
-        """Format inference result for display."""
-        events = result.get("detected_events", [])
-        loudness = result.get("loudness_db", 0)
-        proc_time = result.get("processing_time_ms", 0)
+    def _heartbeat_loop(self):
+        """Background thread for sending periodic heartbeats."""
+        while self.running:
+            self._send_heartbeat()
+            # Sleep in small intervals to check running flag
+            for _ in range(self.heartbeat_interval):
+                if not self.running:
+                    break
+                time.sleep(1)
 
-        if events:
-            event_strs = [f"{e['label']}({e['confidence']:.0%})" for e in events]
-            events_display = ", ".join(event_strs)
-        else:
-            events_display = "(none)"
-
-        return f"Detected: {events_display} | Loudness: {loudness:.1f} dB | Time: {proc_time:.0f}ms"
-
-    def run_continuous(self):
-        """Continuously capture and send audio segments."""
-        self.running = True
-        segment_count = 0
-
-        print(f"\n{'='*60}")
-        print("MICROPHONE SENSOR SIMULATOR")
-        print(f"{'='*60}")
-        print(f"Sensor ID:  {self.sensor_id}")
-        print(f"Location:   {self.location}")
-        print(f"Backend:    {self.backend_url}")
-        print(f"Sample Rate: {self.sample_rate} Hz")
-        print(f"Segment:    {self.segment_duration}s ({self.samples_per_segment * 2} bytes)")
-        print(f"{'='*60}")
-        print("\nPress Ctrl+C to stop\n")
-
-        # Test connection first
-        print("Testing connection to backend...")
-        health_url = self.backend_url.replace("/audio", "/health")
+    def _check_health(self) -> bool:
+        """Check backend health via HTTP."""
+        url = f"http://{self.host}:{self.http_port}/api/ingest/health"
         try:
-            resp = requests.get(health_url, timeout=5)
+            resp = requests.get(url, timeout=5)
             health = resp.json()
             if health.get("model_loaded"):
                 print(f"[OK] Model loaded: {health.get('classes', [])}")
@@ -155,47 +211,98 @@ class MicrophoneSensor:
                 print("[OK] InfluxDB connected")
             else:
                 print("[WARNING] InfluxDB not connected - events won't be stored")
+            return True
         except Exception as e:
             print(f"[WARNING] Could not check health: {e}")
+            return False
+
+    def run_continuous(self):
+        """Continuously capture and stream audio segments via TCP."""
+        self.running = True
+        segment_count = 0
+
+        print(f"\n{'='*60}")
+        print("MICROPHONE SENSOR SIMULATOR (TCP)")
+        print(f"{'='*60}")
+        print(f"Sensor ID:   {self.sensor_id}")
+        print(f"Location:    {self.location}")
+        print(f"TCP Server:  {self.host}:{self.tcp_port}")
+        print(f"HTTP Server: {self.host}:{self.http_port}")
+        print(f"Sample Rate: {self.sample_rate} Hz")
+        print(f"Segment:     {self.segment_duration}s ({self.bytes_per_segment} bytes)")
+        print(f"{'='*60}")
+        print("\nPress Ctrl+C to stop\n")
+
+        # Check backend health
+        print("Checking backend health...")
+        self._check_health()
+
+        # Connect via TCP
+        print(f"\nConnecting to TCP server at {self.host}:{self.tcp_port}...")
+        if not self._connect_tcp():
+            return
+
+        # Start heartbeat thread
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        self._heartbeat_thread.start()
+        print(f"[OK] Heartbeat thread started (interval: {self.heartbeat_interval}s)")
 
         print(f"\n{'='*60}")
         print("STREAMING AUDIO...")
         print(f"{'='*60}\n")
 
-        while self.running:
-            try:
-                # Record one segment
-                audio = sd.rec(
-                    self.samples_per_segment,
-                    samplerate=self.sample_rate,
-                    channels=1,
-                    dtype=np.float32,
-                    device=self.device,
-                )
-                sd.wait()  # Wait for recording to complete
+        try:
+            while self.running:
+                try:
+                    # Record one segment
+                    audio = sd.rec(
+                        self.samples_per_segment,
+                        samplerate=self.sample_rate,
+                        channels=1,
+                        dtype=np.float32,
+                        device=self.device,
+                    )
+                    sd.wait()  # Wait for recording to complete
 
-                if not self.running:
+                    if not self.running:
+                        break
+
+                    # Convert to PCM bytes
+                    pcm_bytes = self._audio_to_pcm_bytes(audio.flatten())
+
+                    # Calculate loudness (RMS in dB)
+                    rms = np.sqrt(np.mean(audio**2))
+                    db = 20 * np.log10(max(rms, 1e-10))
+
+                    # Send to backend via TCP
+                    timestamp = datetime.now().strftime("%H:%M:%S")
+                    segment_count += 1
+
+                    try:
+                        self._socket.sendall(pcm_bytes)
+                        print(
+                            f"[{timestamp}] #{segment_count:04d} | "
+                            f"Sent {len(pcm_bytes)} bytes | "
+                            f"Loudness: {db:.1f} dB"
+                        )
+                    except (BrokenPipeError, ConnectionResetError) as e:
+                        print(f"\n[ERROR] Connection lost: {e}")
+                        print("Attempting to reconnect...")
+                        self._disconnect_tcp()
+                        if self._connect_tcp():
+                            print("[OK] Reconnected!")
+                        else:
+                            print("[ERROR] Reconnection failed. Stopping.")
+                            break
+
+                except KeyboardInterrupt:
                     break
+                except Exception as e:
+                    print(f"[ERROR] Recording failed: {e}")
+                    time.sleep(1)
 
-                # Convert to PCM bytes
-                pcm_bytes = self._audio_to_pcm_bytes(audio.flatten())
-
-                # Send to backend
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                segment_count += 1
-
-                result = self._send_audio(pcm_bytes)
-
-                if result:
-                    print(f"[{timestamp}] #{segment_count:04d} | {self._format_result(result)}")
-                else:
-                    print(f"[{timestamp}] #{segment_count:04d} | Failed to send")
-
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print(f"[ERROR] Recording failed: {e}")
-                time.sleep(1)
+        finally:
+            self._disconnect_tcp()
 
         print(f"\n{'='*60}")
         print(f"Stopped. Sent {segment_count} segments.")
@@ -204,6 +311,7 @@ class MicrophoneSensor:
     def stop(self):
         """Stop the continuous capture loop."""
         self.running = False
+        self._disconnect_tcp()
 
 
 def list_audio_devices():
@@ -221,23 +329,35 @@ def list_audio_devices():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Simulate an ESP32 sensor using your microphone",
+        description="Simulate an ESP32 sensor using your microphone (TCP streaming)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s                                    # Use defaults
   %(prog)s --sensor-id test_mic              # Custom sensor ID
   %(prog)s --location "Conference Room"      # Custom location
-  %(prog)s --backend http://192.168.1.100:8000/api/ingest/audio
+  %(prog)s --host 192.168.1.100              # Remote backend
   %(prog)s --list-devices                    # Show audio devices
   %(prog)s --device 2                        # Use specific microphone
         """,
     )
 
     parser.add_argument(
-        "--backend",
-        default=DEFAULT_CONFIG["backend_url"],
-        help=f"Backend URL (default: {DEFAULT_CONFIG['backend_url']})",
+        "--host",
+        default=DEFAULT_CONFIG["backend_host"],
+        help=f"Backend host (default: {DEFAULT_CONFIG['backend_host']})",
+    )
+    parser.add_argument(
+        "--tcp-port",
+        type=int,
+        default=DEFAULT_CONFIG["tcp_port"],
+        help=f"TCP port for audio streaming (default: {DEFAULT_CONFIG['tcp_port']})",
+    )
+    parser.add_argument(
+        "--http-port",
+        type=int,
+        default=DEFAULT_CONFIG["http_port"],
+        help=f"HTTP port for health/heartbeat (default: {DEFAULT_CONFIG['http_port']})",
     )
     parser.add_argument(
         "--sensor-id",
@@ -267,6 +387,12 @@ Examples:
         help=f"Segment duration in seconds (default: {DEFAULT_CONFIG['segment_duration']})",
     )
     parser.add_argument(
+        "--heartbeat-interval",
+        type=int,
+        default=DEFAULT_CONFIG["heartbeat_interval"],
+        help=f"Heartbeat interval in seconds (default: {DEFAULT_CONFIG['heartbeat_interval']})",
+    )
+    parser.add_argument(
         "--device",
         type=int,
         default=None,
@@ -289,13 +415,16 @@ Examples:
     print(f"       Example .env: SENSOR_API_KEYS={args.sensor_id}:{args.api_key}\n")
 
     sensor = MicrophoneSensor(
-        backend_url=args.backend,
+        host=args.host,
+        tcp_port=args.tcp_port,
+        http_port=args.http_port,
         sensor_id=args.sensor_id,
         location=args.location,
         api_key=args.api_key,
         sample_rate=args.sample_rate,
         segment_duration=args.duration,
         device=args.device,
+        heartbeat_interval=args.heartbeat_interval,
     )
 
     # Handle Ctrl+C gracefully

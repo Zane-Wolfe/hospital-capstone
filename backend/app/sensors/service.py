@@ -14,7 +14,8 @@ def get_sensors() -> list[Sensor]:
     settings = get_settings()
     query_api = get_query_api()
 
-    query = f'''
+    # Query for event counts
+    count_query = f'''
         from(bucket: "{settings.influxdb_bucket}")
         |> range(start: -7d)
         |> filter(fn: (r) => r["_measurement"] == "audio_events")
@@ -23,10 +24,30 @@ def get_sensors() -> list[Sensor]:
         |> count()
     '''
 
-    tables = query_api.query(query, org=settings.influxdb_org)
+    # Query for last seen timestamp
+    last_seen_query = f'''
+        from(bucket: "{settings.influxdb_bucket}")
+        |> range(start: -7d)
+        |> filter(fn: (r) => r["_measurement"] == "audio_events")
+        |> filter(fn: (r) => r["_field"] == "confidence")
+        |> group(columns: ["sensor_id"])
+        |> last()
+    '''
+
+    count_tables = query_api.query(count_query, org=settings.influxdb_org)
+    last_seen_tables = query_api.query(last_seen_query, org=settings.influxdb_org)
+
+    # Build map of sensor_id -> last_seen
+    last_seen_map: dict[str, str] = {}
+    for table in last_seen_tables:
+        for record in table.records:
+            sensor_id = record.values.get("sensor_id", "")
+            if sensor_id:
+                last_seen_map[sensor_id] = record.get_time().isoformat()
+
     sensors_map: dict[str, Sensor] = {}
 
-    for table in tables:
+    for table in count_tables:
         for record in table.records:
             sensor_id = record.values.get("sensor_id", "")
             location = record.values.get("location", "")
@@ -37,6 +58,7 @@ def get_sensors() -> list[Sensor]:
                     sensor_id=sensor_id,
                     location=location,
                     event_count=count,
+                    last_seen=last_seen_map.get(sensor_id),
                 )
             else:
                 sensors_map[sensor_id].event_count += count

@@ -2,10 +2,10 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import Layout from './components/layout/Layout'
 import LoginPage from './pages/LoginPage'
-import DashboardPage from './pages/DashboardPage'
-import EventsPage from './pages/EventsPage'
-import AnalyticsPage from './pages/AnalyticsPage'
-import SensorsPage from './pages/SensorsPage'
+import { MainSummaryPage } from './pages/MainSummaryPage'
+import { LiveDataPage } from './pages/LiveDataPage'
+import { HistoricalDataPage } from './pages/HistoricalDataPage'
+import { DeviceStatusPage } from './pages/DeviceStatusPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -37,11 +37,11 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="events" element={<EventsPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="sensors" element={<SensorsPage />} />
+        <Route index element={<Navigate to="/summary" replace />} />
+        <Route path="summary" element={<MainSummaryPage />} />
+        <Route path="live" element={<LiveDataPage />} />
+        <Route path="history" element={<HistoricalDataPage />} />
+        <Route path="devices" element={<DeviceStatusPage />} />
       </Route>
     </Routes>
   )

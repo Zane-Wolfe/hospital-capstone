@@ -7,10 +7,19 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 python-multipart==0.0.6
 
+# PostgreSQL + SQLAlchemy
+sqlalchemy>=2.0
+asyncpg
+alembic
+Pillow>=10.0.0
+
 # ML Inference
 torch==2.2.0
 torchaudio==2.2.0
 numpy>=1.24.0,<2.0.0
+
+# Audio capture (for test client)
+sounddevice>=0.4.6
 
 # Testing
 pytest==8.0.0

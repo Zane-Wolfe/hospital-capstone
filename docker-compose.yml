@@ -1,5 +1,21 @@
 services:
-  # --- Database ---
+
+  # --- PostgreSQL (Config & Device State) ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: audio_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monitoring_net
+
+  # --- InfluxDB (Time-series Events) ---
   influxdb:
     image: influxdb:2.7
     container_name: audio_event_db
@@ -9,12 +25,12 @@ services:
       - influxdb2_data:/var/lib/influxdb2
       - influxdb2_config:/etc/influxdb2
     environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=my_admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=my_secure_password123
-      - DOCKER_INFLUXDB_INIT_ORG=hospital_monitoring_org
-      - DOCKER_INFLUXDB_INIT_BUCKET=hospital_sounds
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_ADMIN_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_ADMIN_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN}
     networks:
       - monitoring_net
 
@@ -26,12 +42,15 @@ services:
     container_name: audio_backend
     ports:
       - "8000:8000"
+      - "8001:8001"
     depends_on:
       - influxdb
+      - postgres
     env_file:
       - .env
     environment:
-      - INFLUXDB_URL=http://influxdb:8086
+      INFLUXDB_URL: http://influxdb:8086
+      AUDIO_SEGMENT_DURATION_SEC: ${AUDIO_SEGMENT_DURATION_SEC}
     volumes:
       - ./model_training:/app/models:ro
     networks:
@@ -50,9 +69,37 @@ services:
     networks:
       - monitoring_net
 
+  # --- Grafana (Analytics & Dashboards) ---
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: hospital_grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Passed through to provisioning files
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
+      INFLUXDB_ORG: ${INFLUXDB_ORG}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - influxdb
+    networks:
+      - monitoring_net
+
 volumes:
   influxdb2_data:
   influxdb2_config:
+  postgres_data:
+  grafana_data:
 
 networks:
   monitoring_net:

@@ -8,9 +8,17 @@ interface UseWebSocketOptions {
   onInitial?: (events: AudioEvent[]) => void
 }
 
+/**
+ * Sort events by time descending (newest first)
+ */
+function sortEventsByTimeDesc(events: AudioEvent[]): AudioEvent[] {
+  return [...events].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+}
+
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const [isConnected, setIsConnected] = useState(false)
   const [events, setEvents] = useState<AudioEvent[]>([])
+  const [eventCount, setEventCount] = useState(0) // Increments on each new event for triggering refetches
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const optionsRef = useRef(options)
@@ -44,10 +52,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         const message: WebSocketMessage = JSON.parse(event.data)
 
         if (message.type === 'initial' && Array.isArray(message.data)) {
-          setEvents(message.data)
-          optionsRef.current.onInitial?.(message.data)
+          // Sort initial events by time descending (newest first)
+          const sortedEvents = sortEventsByTimeDesc(message.data)
+          setEvents(sortedEvents)
+          optionsRef.current.onInitial?.(sortedEvents)
         } else if (message.type === 'event' && message.data && !Array.isArray(message.data)) {
           setEvents((prev) => [message.data as AudioEvent, ...prev.slice(0, 99)])
+          setEventCount((prev) => prev + 1) // Increment counter for triggering refetches
           optionsRef.current.onEvent?.(message.data as AudioEvent)
         } else if (message.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong' }))
@@ -78,6 +89,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   return {
     isConnected,
     events,
+    eventCount, // Increments on each new event - use as dependency to trigger refetches
     connect,
     disconnect,
   }
