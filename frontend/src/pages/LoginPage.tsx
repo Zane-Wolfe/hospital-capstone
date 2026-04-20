@@ -9,30 +9,85 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/summary')
+      navigate('/')
     }
   }, [isAuthenticated, navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-16 w-16 bg-primary-600 rounded-full flex items-center justify-center">
-            <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div
+      className="min-h-screen flex items-center justify-center dot-grid px-4"
+      style={{ backgroundColor: 'var(--c-page-bg)' }}
+    >
+      <div className="w-full max-w-[360px]">
+
+        {/* Wordmark */}
+        <div className="flex flex-col items-center mb-8">
+          <LoginWaveform />
+          <h1
+            className="font-display-mono text-[11px] tracking-[0.3em] uppercase text-center mt-5"
+            style={{ color: 'var(--c-text-2)' }}
+          >
             Hospital Audio Monitor
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to access the dashboard
+          </h1>
+          <p
+            className="font-mono text-[9px] tracking-[0.2em] uppercase mt-2"
+            style={{ color: 'var(--c-text-3)' }}
+          >
+            Secure Dashboard Access
           </p>
         </div>
-        <div className="bg-white py-8 px-6 shadow rounded-lg">
-          <LoginForm onSuccess={() => navigate('/summary')} />
+
+        {/* Card */}
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: 'var(--c-surface)',
+            border: '1px solid var(--c-border)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+          }}
+        >
+          {/* Green accent line */}
+          <div
+            className="h-[1px] w-full"
+            style={{ background: 'linear-gradient(90deg, transparent, var(--c-green), transparent)' }}
+          />
+          <div className="px-7 py-8">
+            <LoginForm onSuccess={() => navigate('/')} />
+          </div>
         </div>
+
+        <p
+          className="font-mono text-[8.5px] tracking-[0.25em] uppercase text-center mt-6"
+          style={{ color: 'var(--c-text-3)' }}
+        >
+          Authorized Personnel Only
+        </p>
       </div>
     </div>
+  )
+}
+
+function LoginWaveform() {
+  const bars = [4, 10, 18, 26, 16, 22, 12, 20, 8, 14, 6]
+  return (
+    <svg width="88" height="32" viewBox="0 0 88 32" fill="none" aria-hidden="true">
+      {bars.map((h, i) => {
+        const y = (32 - h) / 2
+        return (
+          <rect
+            key={i}
+            x={i * 8 + 1}
+            y={y}
+            width="5"
+            height={h}
+            rx="2.5"
+            style={{
+              fill: 'var(--c-green)',
+              opacity: 0.3 + (h / 26) * 0.65,
+            }}
+          />
+        )
+      })}
+    </svg>
   )
 }

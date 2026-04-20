@@ -10,17 +10,17 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [focusedField, setFocusedField] = useState<'username' | 'password' | null>(null)
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
-
     try {
       await login(username, password)
       onSuccess?.()
-    } catch (err) {
+    } catch {
       setError('Invalid username or password')
     } finally {
       setIsLoading(false)
@@ -28,44 +28,79 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {error && (
-        <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
+        <div
+          className="px-4 py-3 rounded-lg font-mono text-[10.5px] tracking-wide"
+          style={{
+            background: 'var(--c-error-bg)',
+            border: '1px solid var(--c-error-border)',
+            color: 'var(--c-error-text)',
+          }}
+        >
           {error}
         </div>
       )}
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-          Username
-        </label>
-        <input
-          id="username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
+
+      {(['username', 'password'] as const).map((field) => (
+        <div key={field} className="flex flex-col gap-[7px]">
+          <label
+            htmlFor={field}
+            className="font-mono text-[9.5px] tracking-[0.2em] uppercase"
+            style={{ color: 'var(--c-text-2)' }}
+          >
+            {field}
+          </label>
+          <input
+            id={field}
+            type={field === 'password' ? 'password' : 'text'}
+            value={field === 'username' ? username : password}
+            onChange={(e) =>
+              field === 'username' ? setUsername(e.target.value) : setPassword(e.target.value)
+            }
+            onFocus={() => setFocusedField(field)}
+            onBlur={() => setFocusedField(null)}
+            required
+            autoComplete={field === 'username' ? 'username' : 'current-password'}
+            style={{
+              width: '100%',
+              background: 'var(--c-surface-deep)',
+              border: `1px solid ${focusedField === field ? 'var(--c-border-focus)' : 'var(--c-border)'}`,
+              borderRadius: '8px',
+              color: 'var(--c-text)',
+              fontFamily: 'inherit',
+              fontSize: '12px',
+              letterSpacing: '0.04em',
+              padding: '10px 12px',
+              outline: 'none',
+              boxShadow: focusedField === field ? '0 0 0 3px rgba(0,196,106,0.08)' : 'none',
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+            }}
+          />
+        </div>
+      ))}
+
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full font-display-mono text-[11px] tracking-[0.2em] uppercase rounded-lg py-[11px] transition-all duration-150"
+        style={{
+          background: isLoading ? 'var(--c-green)' : 'var(--c-green)',
+          color: 'var(--c-btn-login-text)',
+          opacity: isLoading ? 0.6 : 1,
+          cursor: isLoading ? 'not-allowed' : 'pointer',
+          boxShadow: isLoading ? 'none' : 'var(--glow-login-btn)',
+          border: 'none',
+          fontWeight: 600,
+        }}
+        onMouseEnter={(e) => {
+          if (!isLoading) (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-login-btn-hov)'
+        }}
+        onMouseLeave={(e) => {
+          if (!isLoading) (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-login-btn)'
+        }}
       >
-        {isLoading ? 'Signing in...' : 'Sign in'}
+        {isLoading ? 'Signing in…' : 'Sign In'}
       </button>
     </form>
   )

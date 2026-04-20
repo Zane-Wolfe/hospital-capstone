@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
 from app.auth.service import User
-from app.db.postgres import get_db
-from app.device_positions import service as positions_service
 from app.events.service import (
     get_events,
     get_latest_events,
@@ -13,7 +10,6 @@ from app.events.service import (
     get_event_count_timeseries,
     get_confidence_timeseries,
     get_heatmap_data,
-    get_heatmap_by_position,
     get_events_by_type_timeseries,
 )
 from app.events.schemas import (
@@ -21,7 +17,6 @@ from app.events.schemas import (
     EventStats,
     TimeSeriesPoint,
     HeatmapPoint,
-    PositionalHeatmapPoint,
     EventTypeTimeSeries,
 )
 
@@ -96,26 +91,6 @@ async def get_heatmap(
 ):
     return get_heatmap_data(time_range=time_range)
 
-
-@router.get("/heatmap-by-position", response_model=list[PositionalHeatmapPoint])
-async def get_heatmap_positions(
-    floor_plan_id: int = Query(..., description="Floor plan ID to get positions for"),
-    time_range: str = Query("-1h", description="Time range"),
-    metric: str = Query("count", description="Metric: 'db', 'count', or event type name"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Get heatmap data with device x/y positions for floor plan overlay."""
-    positions = await positions_service.get_all_positions(db, floor_plan_id)
-    position_dicts = [
-        {
-            "sensor_id": p.sensor_id,
-            "x_coord": p.x_coord,
-            "y_coord": p.y_coord,
-        }
-        for p in positions
-    ]
-    return get_heatmap_by_position(position_dicts, time_range, metric)
 
 
 @router.get("/timeseries/by-type", response_model=list[EventTypeTimeSeries])

@@ -1,19 +1,15 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
-import Layout from './components/layout/Layout'
 import LoginPage from './pages/LoginPage'
-import { MainSummaryPage } from './pages/MainSummaryPage'
-import { LiveDataPage } from './pages/LiveDataPage'
-import { HistoricalDataPage } from './pages/HistoricalDataPage'
-import { DeviceStatusPage } from './pages/DeviceStatusPage'
+import { DashboardPage } from './pages/DashboardPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--c-page-bg)' }}>
+        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '2px solid var(--c-border)', borderTopColor: 'var(--c-cyan)' }} />
       </div>
     )
   }
@@ -33,16 +29,11 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <Layout />
+            <DashboardPage />
           </ProtectedRoute>
         }
-      >
-        <Route index element={<Navigate to="/summary" replace />} />
-        <Route path="summary" element={<MainSummaryPage />} />
-        <Route path="live" element={<LiveDataPage />} />
-        <Route path="history" element={<HistoricalDataPage />} />
-        <Route path="devices" element={<DeviceStatusPage />} />
-      </Route>
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

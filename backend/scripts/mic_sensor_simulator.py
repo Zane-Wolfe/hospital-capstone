@@ -114,13 +114,6 @@ class MicrophoneSensor:
             handshake_bytes = json.dumps(handshake).encode("utf-8") + b"\n"
             self._socket.sendall(handshake_bytes)
 
-            print()
-            print()
-            print(handshake)
-            print()
-            print()
-
-
             # Read response
             response_data = b""
             while b"\n" not in response_data:
@@ -172,7 +165,7 @@ class MicrophoneSensor:
             "Content-Type": "application/json",
         }
         payload = {
-            "battery_percent": 25.0,  # Simulated - always full
+            "battery_percent": 100.0,  # Simulated - always full
             "bandwidth_kbps": 128.0,   # Simulated
             "signal_strength_dbm": -50.0,  # Simulated - strong signal
             "firmware_version": "simulator-1.0",

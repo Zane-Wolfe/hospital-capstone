@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { AudioEvent, WebSocketMessage } from '../types'
+import type { AudioEvent, DeviceMetrics, WebSocketMessage } from '../types'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
 
 interface UseWebSocketOptions {
   onEvent?: (event: AudioEvent) => void
   onInitial?: (events: AudioEvent[]) => void
+  onDeviceUpdate?: (metrics: DeviceMetrics) => void
 }
 
 /**
@@ -60,6 +61,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           setEvents((prev) => [message.data as AudioEvent, ...prev.slice(0, 99)])
           setEventCount((prev) => prev + 1) // Increment counter for triggering refetches
           optionsRef.current.onEvent?.(message.data as AudioEvent)
+        } else if (message.type === 'device_update' && message.data && !Array.isArray(message.data)) {
+          optionsRef.current.onDeviceUpdate?.(message.data as DeviceMetrics)
         } else if (message.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong' }))
         }

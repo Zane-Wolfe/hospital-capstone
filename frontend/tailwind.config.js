@@ -20,6 +20,10 @@ export default {
           900: '#1e3a8a',
         },
       },
+      fontFamily: {
+        'display-mono': ['"Share Tech Mono"', 'monospace'],
+        mono: ['"DM Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
     },
   },
   plugins: [],

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { DeviceMetrics, DeviceMetricsSummary } from '../types'
 import { getDeviceMetrics, getDeviceMetricsSummary } from '../api/deviceMetrics'
 
-const REFRESH_INTERVAL_MS = 30000 // 30 seconds
+// Poll interval is a safety net only — the WebSocket is the primary update path
+const REFRESH_INTERVAL_MS = 30_000
 
 export function useDeviceMetrics(autoRefresh = true) {
   const [metrics, setMetrics] = useState<DeviceMetrics[]>([])
@@ -22,6 +23,21 @@ export function useDeviceMetrics(autoRefresh = true) {
     }
   }, [])
 
+  /**
+   * Upsert a single device's metrics received via WebSocket.
+   * If the sensor is already in the list, replace its entry in-place.
+   * If it's new (first heartbeat ever), append it.
+   */
+  const updateDevice = useCallback((updated: DeviceMetrics) => {
+    setMetrics((prev) => {
+      const idx = prev.findIndex((m) => m.sensor_id === updated.sensor_id)
+      if (idx === -1) return [...prev, updated]
+      const next = [...prev]
+      next[idx] = updated
+      return next
+    })
+  }, [])
+
   useEffect(() => {
     fetchMetrics()
 
@@ -30,13 +46,11 @@ export function useDeviceMetrics(autoRefresh = true) {
     }
 
     return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current)
-      }
+      if (intervalRef.current) window.clearInterval(intervalRef.current)
     }
   }, [fetchMetrics, autoRefresh])
 
-  return { metrics, isLoading, error, refetch: fetchMetrics }
+  return { metrics, isLoading, error, refetch: fetchMetrics, updateDevice }
 }
 
 export function useDeviceMetricsSummary(autoRefresh = true) {

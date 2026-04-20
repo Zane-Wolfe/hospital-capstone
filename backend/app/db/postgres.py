@@ -50,7 +50,7 @@ async def get_db() -> AsyncSession:
 
 async def init_postgres():
     """Initialize PostgreSQL - create tables."""
-    from app.models import floor_plan, device_position, device_metrics  # noqa: F401
+    from app.models import device_metrics  # noqa: F401
 
     engine = get_engine()
     async with engine.begin() as conn:

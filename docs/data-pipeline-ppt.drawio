@@ -1,0 +1,176 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Hospital Sound Monitor — Data Pipeline" id="0">
+    <mxGraphModel dx="1088" dy="663" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1900" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="z1" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF3E0;strokeColor=#E65100;fontColor=#E65100;fontSize=13;fontStyle=1;verticalAlign=top;opacity=50;" value="Edge Devices" vertex="1">
+          <mxGeometry height="870" width="200" x="20" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="z2" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;fontSize=13;fontStyle=1;verticalAlign=top;opacity=50;" value="Backend — FastAPI&#xa;HTTP :8000 / TCP :8001" vertex="1">
+          <mxGeometry height="870" width="880" x="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="z3" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontSize=13;fontStyle=1;verticalAlign=top;opacity=50;" value="Storage" vertex="1">
+          <mxGeometry height="870" width="280" x="1140" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="z4" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#2E7D32;fontSize=13;fontStyle=1;verticalAlign=top;opacity=50;" value="Clients" vertex="1">
+          <mxGeometry height="870" width="280" x="1470" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=1;fontColor=#1565C0;" value="— AUDIO PATH —" vertex="1">
+          <mxGeometry height="20" width="140" x="300" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=1;fontColor=#1565C0;" value="— HEARTBEAT PATH —" vertex="1">
+          <mxGeometry height="20" width="165" x="245" y="648" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FF9800;strokeColor=#E65100;fontColor=#000000;fontSize=10;fontStyle=1;" value="ESP32 SENSOR&#xa;&#xa;INMP441 microphone&#xa;16 kHz PCM audio&#xa;WiFi 802.11 b/g/n&#xa;&#xa;1 – N devices" vertex="1">
+          <mxGeometry height="160" width="150" x="45" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#BBDEFB;strokeColor=#1565C0;fontColor=#000000;fontSize=10;fontStyle=1;" value="TCP AUDIO SERVER&#xa;&#xa;asyncio :8001&#xa;JSON handshake + auth&#xa;reads 4 KB chunks&#xa;per-connection buffer" vertex="1">
+          <mxGeometry height="100" width="170" x="260" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#90CAF9;strokeColor=#1565C0;fontColor=#000000;fontSize=10;fontStyle=1;" value="process_audio_segment()&#xa;&#xa;triggers at 32,000 bytes&#xa;(16 kHz x 1 s x 2 B/sample)&#xa;discards partial on disconnect" vertex="1">
+          <mxGeometry height="90" width="185" x="470" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#90CAF9;strokeColor=#1565C0;fontColor=#000000;fontSize=10;fontStyle=1;" value="AUDIO PROCESSOR&#xa;&#xa;PCM -&gt; float32 tensor&#xa;RMS loudness (dBFS)&#xa;MelSpectrogram: 128 mels&#xa;FFT=1024, hop=512&#xa;AmplitudeToDB (80 dB)&#xa;output shape: (1, 128, T)" vertex="1">
+          <mxGeometry height="130" width="185" x="470" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#1E88E5;strokeColor=#1565C0;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" value="RESNET18 INFERENCE&#xa;&#xa;4 residual blocks (64-&gt;512 ch)&#xa;AdaptiveAvgPool -&gt; FC 512-&gt;7&#xa;sigmoid -&gt; multi-label probs&#xa;threshold 0.5 -&gt; events&#xa;CPU inference (Docker)" vertex="1">
+          <mxGeometry height="115" width="185" x="470" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="b7" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;strokeColor=#F57F17;fontColor=#000000;fontSize=10;fontStyle=1;" value="WEBSOCKET MANAGER&#xa;&#xa;/ws/events?token=&lt;jwt&gt;&#xa;broadcast_new_event()&#xa;broadcast_device_update()&#xa;ping/pong keepalive 30 s&#xa;JWT auth on connect" vertex="1">
+          <mxGeometry height="130" width="205" x="760" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#BBDEFB;strokeColor=#1565C0;fontColor=#000000;fontSize=10;fontStyle=1;" value="HEARTBEAT ENDPOINT&#xa;&#xa;POST /api/device-metrics&#xa;        /heartbeat&#xa;auth: X-API-Key header" vertex="1">
+          <mxGeometry height="90" width="170" x="260" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="b6" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#90CAF9;strokeColor=#1565C0;fontColor=#000000;fontSize=10;fontStyle=1;" value="update_heartbeat()&#xa;&#xa;UPSERT device_metrics&#xa;is_online = True&#xa;last_heartbeat = now()" vertex="1">
+          <mxGeometry height="90" width="185" x="470" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" parent="1" style="shape=callout;whiteSpace=wrap;html=0;fillColor=#FFFDE7;strokeColor=#F57F17;fontColor=#000000;fontSize=9;fontStyle=1;perimeter=calloutPerimeter;" value="OFFLINE DETECTION&#xa;last_heartbeat &gt; 5 min old&#xa;-&gt; is_online = False&#xa;checked on each REST poll" vertex="1">
+          <mxGeometry height="90" width="200" x="720" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=0;fillColor=#CE93D8;strokeColor=#6A1B9A;fontColor=#000000;fontSize=10;fontStyle=1;" value="INFLUXDB 2.7&#xa;&#xa;[audio_events]&#xa;tags: sensor_id, location,&#xa;  event_type&#xa;fields: confidence, loudness_db&#xa;&#xa;[audio_level]&#xa;tags: sensor_id, location&#xa;fields: loudness_db&#xa;&#xa;[device_heartbeat]&#xa;tags: sensor_id, location&#xa;fields: battery_%, signal_dbm,&#xa;  bandwidth_kbps" vertex="1">
+          <mxGeometry height="310" width="230" x="1160" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=0;fillColor=#A5D6A7;strokeColor=#2E7D32;fontColor=#000000;fontSize=10;fontStyle=1;" value="POSTGRESQL 16&#xa;&#xa;[device_metrics]&#xa;sensor_id (UNIQUE)&#xa;location&#xa;firmware_version&#xa;battery_percent&#xa;signal_strength_dbm&#xa;bandwidth_kbps&#xa;is_online&#xa;last_heartbeat" vertex="1">
+          <mxGeometry height="230" width="230" x="1160" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#66BB6A;strokeColor=#2E7D32;fontColor=#000000;fontSize=10;fontStyle=1;" value="REACT DASHBOARD&#xa;&#xa;:3000 (nginx)&#xa;Live sensor card grid&#xa;dB level + VU meter&#xa;online / offline badge&#xa;battery + last seen&#xa;dark / light mode" vertex="1">
+          <mxGeometry height="145" width="220" x="1500" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" parent="1" style="shape=callout;whiteSpace=wrap;html=0;fillColor=#FFFDE7;strokeColor=#2E7D32;fontColor=#000000;fontSize=9;perimeter=calloutPerimeter;" value="Polls GET /api/device-metrics&#xa;every 30 s as safety net&#xa;(primary updates via WS)" vertex="1">
+          <mxGeometry height="75" width="200" x="1510" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#66BB6A;strokeColor=#2E7D32;fontColor=#000000;fontSize=10;fontStyle=1;" value="GRAFANA 11.4&#xa;&#xa;:3001&#xa;Hospital Sound Monitor&#xa;Summary&#xa;Device Status&#xa;Historical Analytics&#xa;auto-provisioned dashboards" vertex="1">
+          <mxGeometry height="150" width="220" x="1500" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="ex1" edge="1" parent="1" source="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#E65100;fontColor=#E65100;fontSize=9;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="b1" value="TCP :8001 / raw 16-bit PCM 16 kHz">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ex3" edge="1" parent="1" source="b1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#1565C0;fontColor=#1565C0;fontSize=9;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="b3" value="PCM bytes">
+          <mxGeometry relative="1" x="-0.1111" y="-15" as="geometry">
+            <mxPoint x="-15" y="15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex4" edge="1" parent="1" source="b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#1565C0;fontColor=#1565C0;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="b4" value="32,000 byte segment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ex5" edge="1" parent="1" source="b4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#1565C0;fontColor=#1565C0;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="b5" value="tensor (1, 128, T)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ex8" edge="1" parent="1" source="b5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#F57F17;fontColor=#F57F17;fontSize=9;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" target="b7" value="broadcast_new_event()">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ex6" edge="1" parent="1" source="b5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontSize=9;exitX=1;exitY=0.6;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" target="s1" value="write_audio_events() / if prob &gt;= 0.5">
+          <mxGeometry relative="1" x="-0.094" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="670" y="494" />
+              <mxPoint x="670" y="537" />
+              <mxPoint x="1080" y="537" />
+              <mxPoint x="1080" y="229" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex7" edge="1" parent="1" source="b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontSize=9;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" target="s1" value="write_audio_level() / every segment">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1120" y="153" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex2" edge="1" parent="1" source="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#E65100;fontColor=#E65100;fontSize=9;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="b2" value="HTTP POST :8000 / JSON &#xa;+ API-Key / every ~30 s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ex9" edge="1" parent="1" source="b2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#1565C0;fontColor=#1565C0;fontSize=9;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="b6" value="validated request">
+          <mxGeometry relative="1" y="-25" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex10" edge="1" parent="1" source="b6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#2E7D32;fontColor=#2E7D32;fontSize=9;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;" target="s2" value="UPSERT / is_online = True">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="715" />
+              <mxPoint x="1100" y="712" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex11" edge="1" parent="1" source="b6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontSize=9;exitX=0.7;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.85;entryDx=0;entryDy=0;" target="s1" value="write_heartbeat()">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="560" />
+              <mxPoint x="1100" y="560" />
+              <mxPoint x="1100" y="384" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex12" edge="1" parent="1" source="b6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#F57F17;fontColor=#F57F17;fontSize=9;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.85;entryDx=0;entryDy=0;" target="b7" value="broadcast_device_update()">
+          <mxGeometry relative="1" x="-0.1788" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="680" y="697" />
+              <mxPoint x="680" y="481" />
+              <mxPoint x="760" y="481" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex13" edge="1" parent="1" source="b7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#F57F17;fontColor=#F57F17;fontSize=9;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="c1" value="WS: initial / event / device_update ">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1410" y="409" />
+              <mxPoint x="1410" y="323" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex14" edge="1" parent="1" source="c1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#2E7D32;fontColor=#2E7D32;fontSize=9;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="s2" value="GET /api/device-metrics &#xa;every 30 s">
+          <mxGeometry relative="1" x="-0.1913" y="-80" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1430" y="352" />
+              <mxPoint x="1430" y="735" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex15" edge="1" parent="1" source="s1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontSize=9;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" target="c2" value="Flux queries / datasource:&#xa;influxdb-hospital">
+          <mxGeometry relative="1" x="0.0571" y="100" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1440" y="337" />
+              <mxPoint x="1440" y="660" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ex16" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#2E7D32;fontColor=#2E7D32;fontSize=9;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDx=0;entryDy=0;" target="c2" value="SQL queries / datasource: postgres-hospital">
+          <mxGeometry relative="1" x="-0.0625" y="-30" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1390" y="760" />
+              <mxPoint x="1480" y="760" />
+              <mxPoint x="1480" y="735" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

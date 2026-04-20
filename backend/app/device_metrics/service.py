@@ -4,8 +4,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.device_metrics import DeviceMetrics
-from app.device_metrics.schemas import HeartbeatRequest
+from app.device_metrics.schemas import HeartbeatRequest, DeviceMetricsResponse
 from app.db.influx_write import write_heartbeat
+from app.events.websocket import broadcast_device_update
 
 ONLINE_THRESHOLD_MINUTES = 5
 LOW_BATTERY_THRESHOLD = 20.0
@@ -63,6 +64,10 @@ async def update_heartbeat(
 
     await db.flush()
     await db.refresh(metrics)
+
+    # Broadcast the update to all connected dashboard clients immediately
+    response = DeviceMetricsResponse.model_validate(metrics)
+    await broadcast_device_update(response.model_dump(mode="json"))
 
     # Also write to InfluxDB for time series tracking
     write_heartbeat(

@@ -35,6 +35,11 @@ async def broadcast_new_event(event: dict):
     await manager.broadcast({"type": "event", "data": event})
 
 
+async def broadcast_device_update(device: dict):
+    """Broadcast updated device metrics whenever a heartbeat is processed."""
+    await manager.broadcast({"type": "device_update", "data": device})
+
+
 @router.websocket("/ws/events")
 async def websocket_endpoint(
     websocket: WebSocket,

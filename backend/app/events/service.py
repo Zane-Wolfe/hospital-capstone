@@ -6,7 +6,6 @@ from app.events.schemas import (
     EventStats,
     TimeSeriesPoint,
     HeatmapPoint,
-    PositionalHeatmapPoint,
     EventTypeTimeSeries,
 )
 
@@ -227,65 +226,6 @@ def get_heatmap_data(time_range: str = "-1h") -> list[HeatmapPoint]:
         )
         for loc, data in location_data.items()
     ]
-
-
-def get_heatmap_by_position(
-    device_positions: list[dict],
-    time_range: str = "-1h",
-    metric: str = "count",
-) -> list[PositionalHeatmapPoint]:
-    """
-    Get heatmap data with positions from PostgreSQL.
-    device_positions: list of dicts with sensor_id, x_coord, y_coord
-    metric: 'db' for loudness, 'count' for event count, or event type name
-    """
-    events = get_events(time_range=time_range, limit=10000)
-
-    # Group events by sensor_id
-    sensor_data: dict[str, dict] = {}
-    for event in events:
-        if event.sensor_id not in sensor_data:
-            sensor_data[event.sensor_id] = {
-                "count": 0,
-                "total_loudness": 0.0,
-                "event_types": {},
-            }
-        sensor_data[event.sensor_id]["count"] += 1
-        sensor_data[event.sensor_id]["total_loudness"] += event.loudness_db
-        et = event.event_type
-        sensor_data[event.sensor_id]["event_types"][et] = (
-            sensor_data[event.sensor_id]["event_types"].get(et, 0) + 1
-        )
-
-    # Map to positions
-    results = []
-    for pos in device_positions:
-        sensor_id = pos["sensor_id"]
-        data = sensor_data.get(sensor_id, {"count": 0, "total_loudness": 0.0, "event_types": {}})
-
-        if metric == "db":
-            value = (
-                data["total_loudness"] / data["count"]
-                if data["count"] > 0
-                else 0.0
-            )
-        elif metric == "count":
-            value = float(data["count"])
-        else:
-            # metric is an event type name
-            value = float(data["event_types"].get(metric, 0))
-
-        results.append(
-            PositionalHeatmapPoint(
-                sensor_id=sensor_id,
-                x_coord=pos["x_coord"],
-                y_coord=pos["y_coord"],
-                value=value,
-                metric_type=metric,
-            )
-        )
-
-    return results
 
 
 def get_events_by_type_timeseries(
