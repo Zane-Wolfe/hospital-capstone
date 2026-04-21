@@ -78,15 +78,16 @@ export function SensorCard({
       className="relative rounded-xl overflow-hidden dot-grid"
       style={{
         background: 'var(--c-surface)',
-        border: `1px solid ${flash ? 'var(--c-flash-border)' : 'var(--c-border)'}`,
+        border: `1px solid ${flash ? 'var(--c-flash-border)' : isDbStale && loudnessDb !== null ? 'var(--c-amber)' : 'var(--c-border)'}`,
         boxShadow: flash ? 'var(--c-flash-shadow)' : 'var(--c-shadow-card)',
         transition: 'border-color 0.2s, box-shadow 0.2s',
+        opacity: isOnline ? 1 : 0.55,
       }}
       onMouseEnter={(e) => {
-        if (!flash) (e.currentTarget as HTMLElement).style.borderColor = 'var(--c-border-hov)'
+        if (!flash) (e.currentTarget as HTMLElement).style.borderColor = isDbStale && loudnessDb !== null ? 'var(--c-amber)' : 'var(--c-border-hov)'
       }}
       onMouseLeave={(e) => {
-        if (!flash) (e.currentTarget as HTMLElement).style.borderColor = 'var(--c-border)'
+        if (!flash) (e.currentTarget as HTMLElement).style.borderColor = isDbStale && loudnessDb !== null ? 'var(--c-amber)' : 'var(--c-border)'
       }}
     >
       {/* Left-edge status stripe */}
@@ -133,37 +134,14 @@ export function SensorCard({
           {location ?? 'Location unknown'}
         </p>
 
-        {/* ── Row 3: dB number ── */}
-        <div className="flex items-baseline justify-center gap-[7px] mb-3">
-          <span
-            className={['db-number font-display-mono text-[3.4rem] leading-none tabular-nums select-none', flash ? 'db-flash' : ''].join(' ')}
-            style={{
-              color: hasLiveData
-                ? 'var(--c-cyan)'
-                : isDbStale && loudnessDb !== null
-                  ? 'var(--c-stale-db)'
-                  : 'var(--c-text-4)',
-              textShadow: hasLiveData ? 'var(--glow-db)' : 'none',
-            }}
-          >
-            {loudnessDb !== null ? loudnessDb.toFixed(1) : '\u2014'}
-          </span>
-          <span
-            className="font-mono text-[9.5px] tracking-[0.22em] uppercase pb-[3px]"
-            style={{ color: hasLiveData ? 'var(--c-cyan-dim)' : 'var(--c-text-3)' }}
-          >
-            dBFS
-          </span>
-        </div>
-
         {/* ── Level bar ── */}
         <div
           aria-label={`Signal level: ${loudnessDb !== null ? loudnessDb.toFixed(1) + ' dBFS' : 'no data'}`}
-          className="w-full h-[4px] rounded-full overflow-hidden mb-[6px]"
+          className="w-full h-[28px] rounded-lg overflow-hidden mb-[6px]"
           style={{ backgroundColor: 'var(--c-level-track)' }}
         >
           <div
-            className="level-bar-fill h-full rounded-full"
+            className="level-bar-fill h-full rounded-lg"
             style={{
               width: `${fillPct}%`,
               backgroundColor: hasLiveData ? barColor : 'transparent',
@@ -184,6 +162,29 @@ export function SensorCard({
               {v}
             </span>
           ))}
+        </div>
+
+        {/* ── dB number ── */}
+        <div className="flex items-baseline justify-center gap-[7px] mb-3">
+          <span
+            className={['db-number font-display-mono text-[1.8rem] leading-none tabular-nums select-none', flash ? 'db-flash' : ''].join(' ')}
+            style={{
+              color: hasLiveData
+                ? 'var(--c-cyan)'
+                : isDbStale && loudnessDb !== null
+                  ? 'var(--c-stale-db)'
+                  : 'var(--c-text-4)',
+              textShadow: hasLiveData ? 'var(--glow-db)' : 'none',
+            }}
+          >
+            {loudnessDb !== null ? loudnessDb.toFixed(1) : '\u2014'}
+          </span>
+          <span
+            className="font-mono text-[9.5px] tracking-[0.22em] uppercase pb-[2px]"
+            style={{ color: hasLiveData ? 'var(--c-cyan-dim)' : 'var(--c-text-3)' }}
+          >
+            dBFS
+          </span>
         </div>
 
         {/* Stale indicator */}

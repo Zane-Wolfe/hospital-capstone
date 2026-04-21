@@ -90,9 +90,6 @@ export function DashboardPage() {
                 {onlineCount} / {devices.length} online
               </p>
             </div>
-            <div className="font-mono text-[9px] tracking-[0.15em] uppercase" style={{ color: 'var(--c-text-3)' }}>
-              30s refresh
-            </div>
           </div>
         )}
 
