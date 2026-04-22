@@ -1,6 +1,36 @@
 import logging
+import logging.config
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+logging.config.dictConfig({
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        }
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "default",
+        }
+    },
+    "loggers": {
+        "app": {
+            "handlers": ["stdout"],
+            "level": "INFO",
+            "propagate": False,
+        }
+    },
+    "root": {
+        "handlers": ["stdout"],
+        "level": "WARNING",
+    },
+})
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

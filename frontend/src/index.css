@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,112 +8,106 @@
 
 :root {
   /* Backgrounds */
-  --c-page-bg:     #060d1a;
-  --c-surface:     #0d1a2e;
-  --c-surface-deep:#071020;
-  --c-header-bg:   rgba(6,13,26,0.94);
+  --c-page-bg:     #0f172a;
+  --c-surface:     #1e293b;
+  --c-surface-deep:#0f172a;
+  --c-header-bg:   rgba(15,23,42,0.96);
 
   /* Borders & dividers */
-  --c-border:      rgba(255,255,255,0.05);
-  --c-border-hov:  rgba(255,255,255,0.11);
-  --c-border-focus:rgba(0,196,106,0.45);
-  --c-divider:     rgba(255,255,255,0.05);
-  --c-flash-border:rgba(0,184,217,0.22);
-  --c-flash-shadow:0 0 0 1px rgba(0,184,217,0.10), 0 8px 40px rgba(0,0,0,0.55);
+  --c-border:       rgba(255,255,255,0.08);
+  --c-border-hov:   rgba(255,255,255,0.15);
+  --c-border-focus: rgba(59,130,246,0.50);
+  --c-divider:      rgba(255,255,255,0.07);
+  --c-flash-border: rgba(59,130,246,0.30);
+  --c-flash-shadow: 0 0 0 1px rgba(59,130,246,0.12), 0 4px 24px rgba(0,0,0,0.35);
 
-  /* Text hierarchy — solid pre-composed values, verified for contrast on #0d1a2e */
-  --c-text:  #e2e8f0;   /* 14.7:1 — primary labels, values            */
-  --c-text-2:#94a3b8;   /*  7.4:1 — secondary text, timestamps        */
-  --c-text-3:#64748b;   /*  4.0:1 — muted labels, ticks (AA large)    */
-  --c-text-4:#475569;   /*  2.1:1 — decorative/structural ONLY        */
+  /* Text hierarchy */
+  --c-text:  #f1f5f9;   /* slate-100 */
+  --c-text-2:#94a3b8;   /* slate-400 */
+  --c-text-3:#64748b;   /* slate-500 */
+  --c-text-4:#475569;   /* slate-600 */
 
   /* Status / accent */
-  --c-green:   #00c46a;
-  --c-red:     #ff2d55;
-  --c-amber:   #ffb830;
-  --c-cyan:    #00b8d9;
-  --c-cyan-dim:#3d9eb8;  /* readable muted cyan — 5.8:1 on card bg    */
-  --c-stale-db:#5b7fa6;  /* desaturated blue — 4.5:1 on card bg       */
+  --c-green:   #22c55e;   /* green-500 */
+  --c-red:     #ef4444;   /* red-500 */
+  --c-amber:   #f59e0b;   /* amber-500 */
+  --c-cyan:    #3b82f6;   /* blue-500 — medical blue */
+  --c-cyan-dim:#60a5fa;   /* blue-400 */
+  --c-stale-db:#64748b;   /* slate-500 */
 
   /* Level bar & skeleton */
-  --c-level-track: rgba(255,255,255,0.05);
-  --c-scale-tick:  #64748b;  /* same as --c-text-3 — 4.0:1             */
-  --c-skeleton:    rgba(255,255,255,0.06);
+  --c-level-track: rgba(255,255,255,0.08);
+  --c-scale-tick:  #64748b;
+  --c-skeleton:    rgba(255,255,255,0.07);
   --c-skeleton-2:  rgba(255,255,255,0.04);
 
   /* Card shadow */
-  --c-shadow-card: 0 4px 24px rgba(0,0,0,0.45);
+  --c-shadow-card: 0 1px 3px rgba(0,0,0,0.30), 0 4px 16px rgba(0,0,0,0.20);
 
-  /* Glows — suppressed in light mode */
-  --glow-stripe-online: 0 0 8px rgba(0,196,106,0.40);
-  --glow-dot-online:    0 0 5px #00c46a;
-  --glow-db:            0 0 30px rgba(0,184,217,0.15);
-  --glow-db-flash:      0 0 24px rgba(0,184,217,0.80);
-  --glow-login-btn:     0 0 20px rgba(0,196,106,0.20);
-  --glow-login-btn-hov: 0 0 28px rgba(0,196,106,0.35);
+  /* Glows — minimal in hospital context */
+  --glow-stripe-online: 0 0 6px rgba(34,197,94,0.25);
+  --glow-dot-online:    0 0 4px rgba(34,197,94,0.40);
+  --glow-db:            none;
+  --glow-db-flash:      none;
+  --glow-login-btn:     0 2px 8px rgba(59,130,246,0.25);
+  --glow-login-btn-hov: 0 3px 12px rgba(59,130,246,0.35);
 
-  /* Animations — suppressed in light mode */
+  /* Animations */
   --anim-dot: glow-pulse 2.2s ease-in-out infinite;
 
-  /* Dot grid */
-  --c-dot-grid: rgba(255,255,255,0.03);
-
   /* Login / form */
-  --c-btn-login-text: #060d1a;
-  --c-error-bg:     rgba(255,45,85,0.08);
-  --c-error-border: rgba(255,45,85,0.20);
-  --c-error-text:   #ff6b88;
+  --c-btn-login-text: #ffffff;
+  --c-error-bg:     rgba(239,68,68,0.08);
+  --c-error-border: rgba(239,68,68,0.22);
+  --c-error-text:   #fca5a5;
 }
 
 [data-theme="light"] {
-  --c-page-bg:     #eef2f8;
+  --c-page-bg:     #f1f5f9;
   --c-surface:     #ffffff;
-  --c-surface-deep:#f2f6fb;
-  --c-header-bg:   rgba(238,242,248,0.96);
+  --c-surface-deep:#f8fafc;
+  --c-header-bg:   rgba(255,255,255,0.97);
 
-  --c-border:      rgba(0,0,0,0.09);
-  --c-border-hov:  rgba(0,0,0,0.16);
-  --c-border-focus:rgba(0,150,90,0.50);
-  --c-divider:     rgba(0,0,0,0.08);
-  --c-flash-border:rgba(0,109,153,0.28);
-  --c-flash-shadow:0 0 0 1px rgba(0,109,153,0.12), 0 8px 32px rgba(0,0,0,0.10);
+  --c-border:       rgba(0,0,0,0.09);
+  --c-border-hov:   rgba(0,0,0,0.16);
+  --c-border-focus: rgba(37,99,235,0.45);
+  --c-divider:      rgba(0,0,0,0.07);
+  --c-flash-border: rgba(37,99,235,0.28);
+  --c-flash-shadow: 0 0 0 1px rgba(37,99,235,0.10), 0 4px 16px rgba(0,0,0,0.08);
 
-  /* Text hierarchy — solid pre-composed values, verified for contrast on #ffffff */
-  --c-text:  #111827;   /* 18.1:1 — primary labels, values            */
-  --c-text-2:#374151;   /* 10.2:1 — secondary text, timestamps        */
-  --c-text-3:#6b7280;   /*  4.6:1 — muted labels, ticks (AA)          */
-  --c-text-4:#9ca3af;   /*  2.6:1 — decorative/structural ONLY        */
+  /* Text hierarchy */
+  --c-text:  #0f172a;   /* slate-900 */
+  --c-text-2:#334155;   /* slate-700 */
+  --c-text-3:#64748b;   /* slate-500 */
+  --c-text-4:#94a3b8;   /* slate-400 */
 
-  --c-green:   #00965a;
-  --c-red:     #d91a3e;
-  --c-amber:   #c96b00;
-  --c-cyan:    #006d99;
-  --c-cyan-dim:#005f87;  /* readable dark teal — 6.4:1 on white        */
-  --c-stale-db:#3d6e99;  /* desaturated blue — 5.2:1 on white          */
+  --c-green:   #16a34a;   /* green-700 */
+  --c-red:     #dc2626;   /* red-600 */
+  --c-amber:   #d97706;   /* amber-600 */
+  --c-cyan:    #1d4ed8;   /* blue-700 */
+  --c-cyan-dim:#2563eb;   /* blue-600 */
+  --c-stale-db:#94a3b8;   /* slate-400 */
 
-  --c-level-track: rgba(0,0,0,0.07);
-  --c-scale-tick:  #6b7280;  /* same as --c-text-3 — 4.6:1             */
-  --c-skeleton:    rgba(0,0,0,0.07);
-  --c-skeleton-2:  rgba(0,0,0,0.04);
+  --c-level-track: #e2e8f0;
+  --c-scale-tick:  #94a3b8;
+  --c-skeleton:    #e2e8f0;
+  --c-skeleton-2:  #f1f5f9;
 
-  --c-shadow-card: 0 2px 16px rgba(0,0,0,0.08);
+  --c-shadow-card: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
 
-  /* Suppress glows */
   --glow-stripe-online: none;
   --glow-dot-online:    none;
   --glow-db:            none;
   --glow-db-flash:      none;
-  --glow-login-btn:     0 2px 8px rgba(0,150,90,0.25);
-  --glow-login-btn-hov: 0 3px 12px rgba(0,150,90,0.35);
+  --glow-login-btn:     0 2px 8px rgba(37,99,235,0.25);
+  --glow-login-btn-hov: 0 3px 12px rgba(37,99,235,0.35);
 
   --anim-dot: none;
 
-  --c-dot-grid: rgba(0,0,0,0.04);
-
-  --c-btn-login-text: #060d1a;
-  --c-error-bg:     rgba(217,26,62,0.07);
-  --c-error-border: rgba(217,26,62,0.20);
-  --c-error-text:   #b01030;
+  --c-btn-login-text: #ffffff;
+  --c-error-bg:     rgba(220,38,38,0.06);
+  --c-error-border: rgba(220,38,38,0.18);
+  --c-error-text:   #dc2626;
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────── */
@@ -122,7 +116,7 @@
   body {
     background-color: var(--c-page-bg);
     color: var(--c-text);
-    font-family: 'DM Mono', ui-monospace, monospace;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -133,32 +127,14 @@
   ::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.28); }
 }
 
-/* ─── Utilities ─────────────────────────────────────────────────────────── */
-
-@layer utilities {
-  .dot-grid {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      var(--c-dot-grid) 1px,
-      transparent 0
-    );
-    background-size: 20px 20px;
-  }
-}
-
-/* ─── Per-element light-mode glow suppression ───────────────────────────── */
-
-[data-theme="light"] .level-bar-fill  { box-shadow: none !important; }
-[data-theme="light"] .db-number       { text-shadow: none !important; }
-
 /* ─── Animations ────────────────────────────────────────────────────────── */
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0,196,106,0.5); }
-  50%       { box-shadow: 0 0 0 5px rgba(0,196,106,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
 }
 
 @keyframes db-flash {
-  0%   { text-shadow: var(--glow-db-flash); }
-  100% { text-shadow: var(--glow-db); }
+  0%   { opacity: 0.6; }
+  100% { opacity: 1; }
 }

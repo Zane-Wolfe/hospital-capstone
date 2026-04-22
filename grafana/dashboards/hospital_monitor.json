@@ -219,7 +219,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "dBFS",
+            "axisLabel": "dBA",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -258,11 +258,11 @@
         },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Audio Level (dBFS) by Sensor",
+      "title": "Audio Level (dBA) by Sensor",
       "targets": [
         {
           "datasource": { "type": "influxdb", "uid": "influxdb-hospital" },
-          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"audio_level\")\n  |> filter(fn: (r) => r._field == \"loudness_db\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"audio_level\")\n  |> filter(fn: (r) => r._field == \"loudness_dba\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],

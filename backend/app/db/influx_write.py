@@ -15,7 +15,7 @@ def write_audio_event(
     location: str,
     event_type: str,
     confidence: float,
-    loudness_db: float,
+    loudness_dba: float,
     timestamp: datetime | None = None,
 ) -> bool:
     """
@@ -26,7 +26,7 @@ def write_audio_event(
         location: Physical location of the sensor
         event_type: Type of event detected (e.g., 'alarm', 'speech')
         confidence: Confidence score (0.0 - 1.0)
-        loudness_db: Loudness in dBFS
+        loudness_dba: A-weighted loudness in absolute dBA
         timestamp: Event timestamp (defaults to now)
 
     Returns:
@@ -43,7 +43,7 @@ def write_audio_event(
         .tag("location", location)
         .tag("event_type", event_type)
         .field("confidence", confidence)
-        .field("loudness_db", loudness_db)
+        .field("loudness_dba", loudness_dba)
         .time(timestamp)
     )
 
@@ -64,7 +64,7 @@ def write_audio_events(
     sensor_id: str,
     location: str,
     detected_events: list[dict],
-    loudness_db: float,
+    loudness_dba: float,
     timestamp: datetime | None = None,
 ) -> int:
     """
@@ -74,7 +74,7 @@ def write_audio_events(
         sensor_id: ID of the sensor
         location: Physical location of the sensor
         detected_events: List of dicts with 'label' and 'confidence' keys
-        loudness_db: Loudness in dBFS
+        loudness_dba: A-weighted loudness in absolute dBA
         timestamp: Event timestamp (defaults to now)
 
     Returns:
@@ -90,7 +90,7 @@ def write_audio_events(
             location=location,
             event_type=event["label"],
             confidence=event["confidence"],
-            loudness_db=loudness_db,
+            loudness_dba=loudness_dba,
             timestamp=timestamp,
         ):
             successful += 1
@@ -101,10 +101,10 @@ def write_audio_events(
 def write_audio_level(
     sensor_id: str,
     location: str,
-    loudness_db: float,
+    loudness_dba: float,
     timestamp: datetime | None = None,
 ) -> bool:
-    """Write a continuous audio level sample to InfluxDB for every processed segment."""
+    """Write a continuous audio level sample in dBA to InfluxDB for every processed segment."""
     settings = get_settings()
 
     if timestamp is None:
@@ -114,7 +114,7 @@ def write_audio_level(
         Point("audio_level")
         .tag("sensor_id", sensor_id)
         .tag("location", location)
-        .field("loudness_db", loudness_db)
+        .field("loudness_dba", loudness_dba)
         .time(timestamp)
     )
 

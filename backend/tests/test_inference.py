@@ -43,29 +43,29 @@ class TestAudioProcessor:
         assert tensor[0, 2].item() == 0.0  # Zero
 
     def test_compute_loudness_silence(self, processor):
-        """Test loudness computation for silence."""
+        """Test loudness computation for silence returns 0.0."""
         silence = torch.zeros(1, 1000)
-        loudness = processor.compute_loudness_db(silence)
+        loudness = processor.compute_loudness_dba(silence)
 
-        assert loudness == -100.0  # Defined value for silence
+        assert loudness == 0.0  # Silence sentinel value
 
     def test_compute_loudness_full_scale(self, processor):
-        """Test loudness computation for full-scale signal."""
-        # Full scale sine wave would have RMS of 1/sqrt(2) = 0.707
-        # For simplicity, test with constant 1.0
-        full_scale = torch.ones(1, 1000)
-        loudness = processor.compute_loudness_db(full_scale)
+        """Test loudness computation for full-scale signal adds SPH0645 calibration offset."""
+        # DC signal: A-weighting zeroes DC, so use a 1kHz tone instead
+        # At 1kHz A(f)=1, so dBA = dBFS(A) + 120
+        sample_rate = 16000
+        t = torch.arange(1000, dtype=torch.float32) / sample_rate
+        tone_1khz = torch.sin(2 * 3.14159 * 1000 * t).unsqueeze(0)
+        loudness = processor.compute_loudness_dba(tone_1khz)
 
-        # RMS of constant 1.0 is 1.0, so 20*log10(1) = 0 dB
-        assert loudness == 0.0
+        # 1kHz sine RMS ≈ 0.707 → dBFS ≈ -3.01, + 120 offset = ~116.99 dBA
+        assert 115.0 < loudness < 118.0
 
-    def test_compute_loudness_half_scale(self, processor):
-        """Test loudness computation for half-scale signal."""
-        half_scale = torch.ones(1, 1000) * 0.5
-        loudness = processor.compute_loudness_db(half_scale)
-
-        # 20*log10(0.5) = -6.02 dB
-        assert abs(loudness - (-6.02)) < 0.1
+    def test_compute_loudness_louder_than_quieter(self, processor):
+        """Test that a louder signal produces a higher dBA value."""
+        loud = torch.ones(1, 1000) * 0.5
+        quiet = torch.ones(1, 1000) * 0.1
+        assert processor.compute_loudness_dba(loud) > processor.compute_loudness_dba(quiet)
 
     def test_preprocess_output_shape(self, processor):
         """Test that preprocess returns correct shapes for MelSpectrogram."""
@@ -151,7 +151,7 @@ class TestSoundInference:
 
         assert "detected_events" in result
         assert "all_probabilities" in result
-        assert "loudness_db" in result
+        assert "loudness_dba" in result
         assert isinstance(result["detected_events"], list)
         assert isinstance(result["all_probabilities"], dict)
         assert len(result["all_probabilities"]) == 7  # 7 classes

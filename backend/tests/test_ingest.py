@@ -135,7 +135,7 @@ class TestIngestEndpoint:
                     "speech": 0.78,
                     "silence": 0.15,
                 },
-                "loudness_db": -24.5,
+                "loudness_dba": -24.5,
             }
             mock.return_value = mock_engine
             yield mock_engine
@@ -174,7 +174,7 @@ class TestIngestEndpoint:
         assert result["status"] == "processed"
         assert "segment_id" in result
         assert len(result["detected_events"]) == 2
-        assert result["loudness_db"] == -24.5
+        assert result["loudness_dba"] == -24.5
         assert result["processing_time_ms"] > 0
 
         # Verify inference was called
@@ -275,7 +275,7 @@ class TestSchemas:
             detected_events=[
                 DetectedEvent(label="alarm", confidence=0.92),
             ],
-            loudness_db=-24.5,
+            loudness_dba=-24.5,
             processing_time_ms=45.0,
         )
         assert response.status == "processed"

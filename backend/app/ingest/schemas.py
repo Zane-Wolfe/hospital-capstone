@@ -19,7 +19,7 @@ class IngestResponse(BaseModel):
     detected_events: list[DetectedEvent] = Field(
         default_factory=list, description="List of detected events"
     )
-    loudness_db: float = Field(..., description="Audio loudness in dBFS")
+    loudness_dba: float = Field(..., description="A-weighted audio loudness in absolute dBA")
     processing_time_ms: float = Field(..., description="Processing time in milliseconds")
 
 

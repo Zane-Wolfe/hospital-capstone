@@ -35,13 +35,13 @@ export default function Header({ wsConnected }: HeaderProps) {
           <WaveformMark />
           <div className="flex flex-col leading-none gap-[3px]">
             <span
-              className="font-display-mono text-[10.5px] tracking-[0.25em] uppercase"
+              className="font-display-mono text-[13px] font-semibold tracking-tight"
               style={{ color: 'var(--c-text)' }}
             >
               Hospital Audio Monitor
             </span>
             <span
-              className="font-mono text-[8.5px] tracking-[0.18em] uppercase"
+              className="font-mono text-[11px]"
               style={{ color: 'var(--c-text-3)' }}
             >
               Real-time Sensor Dashboard
@@ -63,8 +63,8 @@ export default function Header({ wsConnected }: HeaderProps) {
                 }}
               />
               <span
-                className="font-mono text-[9px] tracking-[0.2em] uppercase"
-                style={{ color: wsConnected ? 'var(--c-green)' : 'var(--c-amber)', opacity: 0.8 }}
+                className="font-mono text-[11px] font-medium"
+                style={{ color: wsConnected ? 'var(--c-green)' : 'var(--c-amber)', opacity: 0.9 }}
               >
                 {wsConnected ? 'Live' : 'Reconnecting'}
               </span>
@@ -97,7 +97,7 @@ export default function Header({ wsConnected }: HeaderProps) {
 
           {user?.username && (
             <span
-              className="hidden sm:block font-mono text-[9.5px] tracking-wide"
+              className="hidden sm:block font-mono text-[11px]"
               style={{ color: 'var(--c-text-3)' }}
             >
               {user.username}
@@ -106,7 +106,7 @@ export default function Header({ wsConnected }: HeaderProps) {
 
           <button
             onClick={logout}
-            className="font-mono text-[9.5px] tracking-[0.18em] uppercase px-3 py-[7px] rounded-lg transition-all duration-150"
+            className="font-mono text-[11px] font-medium px-3 py-[7px] rounded-lg transition-all duration-150"
             style={{
               border: '1px solid var(--c-border)',
               color: 'var(--c-text-3)',
@@ -149,7 +149,7 @@ function WaveformMark() {
           width="3"
           height={b.h}
           rx="1.5"
-          style={{ fill: 'var(--c-green)', opacity: 0.45 + i * 0.1 }}
+          style={{ fill: 'var(--c-cyan)', opacity: 0.45 + i * 0.1 }}
         />
       ))}
     </svg>

@@ -57,10 +57,10 @@ function EmptyState() {
         <line x1="9" y1="9" x2="47" y2="47" style={{ stroke: 'var(--c-red)', opacity: 0.3 }} strokeWidth="1.4" />
       </svg>
       <div className="text-center" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <p className="font-display-mono text-[11px] tracking-[0.3em] uppercase" style={{ color: 'var(--c-text-3)' }}>
+        <p className="font-display-mono text-[14px] font-medium" style={{ color: 'var(--c-text-3)' }}>
           No sensors connected
         </p>
-        <p className="font-mono text-[9.5px] tracking-[0.2em] uppercase" style={{ color: 'var(--c-text-3)' }}>
+        <p className="font-mono text-[12px]" style={{ color: 'var(--c-text-3)' }}>
           Waiting for heartbeat…
         </p>
       </div>
@@ -83,10 +83,10 @@ export function DashboardPage() {
         {!isLoading && devices.length > 0 && (
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="font-display-mono text-[11px] tracking-[0.25em] uppercase" style={{ color: 'var(--c-text-2)' }}>
+              <h1 className="font-display-mono text-[15px] font-semibold" style={{ color: 'var(--c-text-2)' }}>
                 Sensor Fleet
               </h1>
-              <p className="font-mono text-[9.5px] tracking-[0.15em] uppercase mt-[3px]" style={{ color: 'var(--c-text-3)' }}>
+              <p className="font-mono text-[12px] mt-[3px]" style={{ color: 'var(--c-text-3)' }}>
                 {onlineCount} / {devices.length} online
               </p>
             </div>
@@ -113,7 +113,7 @@ export function DashboardPage() {
                   isOnline={device.is_online}
                   batteryPercent={device.battery_percent}
                   lastHeartbeat={device.last_heartbeat}
-                  loudnessDb={entry?.loudness_db ?? null}
+                  loudnessDb={entry?.loudness_dba ?? null}
                   isDbStale={entry?.isStale ?? false}
                 />
               )

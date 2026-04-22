@@ -214,7 +214,7 @@ class SoundInference:
         effective_threshold = threshold if threshold is not None else self.threshold
 
         # Preprocess audio
-        mel_spec, loudness_db = self.processor.preprocess(pcm_bytes)
+        mel_spec, loudness_dba = self.processor.preprocess(pcm_bytes)
 
         # Add batch dimension: (1, n_mels, time) -> (batch, 1, n_mels, time)
         mel_spec = mel_spec.unsqueeze(0).to(self.device)
@@ -250,7 +250,7 @@ class SoundInference:
         return {
             "detected_events": detected_events,
             "all_probabilities": all_probs,
-            "loudness_db": loudness_db,
+            "loudness_dba": loudness_dba,
         }
 
     def health_check(self) -> dict:

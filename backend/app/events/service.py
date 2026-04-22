@@ -59,7 +59,7 @@ def get_events(
                 location=record.values.get("location", ""),
                 event_type=record.values.get("event_type", ""),
                 confidence=record.values.get("confidence", 0.0),
-                loudness_db=record.values.get("loudness_db", 0.0),
+                loudness_dba=record.values.get("loudness_dba", 0.0),
             ))
     return events
 
@@ -95,7 +95,7 @@ def get_event_stats(time_range: str = "-1h") -> EventStats:
         from(bucket: "{settings.influxdb_bucket}")
         |> range(start: {time_range})
         |> filter(fn: (r) => r["_measurement"] == "audio_events")
-        |> filter(fn: (r) => r["_field"] == "loudness_db")
+        |> filter(fn: (r) => r["_field"] == "loudness_dba")
         |> mean()
     '''
 
@@ -140,7 +140,7 @@ def get_loudness_timeseries(time_range: str = "-1h", window: str = "5m") -> list
         from(bucket: "{settings.influxdb_bucket}")
         |> range(start: {time_range})
         |> filter(fn: (r) => r["_measurement"] == "audio_events")
-        |> filter(fn: (r) => r["_field"] == "loudness_db")
+        |> filter(fn: (r) => r["_field"] == "loudness_dba")
         |> aggregateWindow(every: {window}, fn: mean, createEmpty: false)
         |> yield(name: "mean")
     '''
@@ -216,7 +216,7 @@ def get_heatmap_data(time_range: str = "-1h") -> list[HeatmapPoint]:
         if event.location not in location_data:
             location_data[event.location] = {"count": 0, "total_loudness": 0.0}
         location_data[event.location]["count"] += 1
-        location_data[event.location]["total_loudness"] += event.loudness_db
+        location_data[event.location]["total_loudness"] += event.loudness_dba
 
     return [
         HeatmapPoint(

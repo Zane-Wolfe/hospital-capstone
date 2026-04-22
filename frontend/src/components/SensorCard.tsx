@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
 const LOW_BATTERY_THRESHOLD = 20
-const DB_MIN = -80
-const DB_MAX = 0
+const DB_MIN = 20
+const DB_MAX = 100
 
 function formatRelativeTime(isoString: string | null): string {
   if (!isoString) return 'Never'
@@ -21,11 +21,11 @@ function dbToFill(db: number): number {
   return Math.max(0, Math.min(100, ((db - DB_MIN) / (DB_MAX - DB_MIN)) * 100))
 }
 
-/** Zone color for the level bar — works on both light and dark backgrounds */
+/** Zone color for the level bar based on WHO hospital noise guidelines */
 function dbToBarColor(db: number): string {
-  if (db > -12) return '#e8294a' // near clipping — red
-  if (db > -30) return '#e8920a' // moderate — amber
-  return '#00a857'               // quiet — green
+  if (db > 80) return '#e8294a' // above 80 dBA — alarm/harmful level
+  if (db > 55) return '#e8920a' // 55–80 dBA — elevated/disruptive
+  return '#00a857'              // ≤55 dBA — acceptable
 }
 
 export interface SensorCardProps {
@@ -105,13 +105,13 @@ export function SensorCard({
         {/* ── Row 1: sensor ID + status badge ── */}
         <div className="flex items-center justify-between gap-2">
           <span
-            className="font-display-mono text-[10.5px] tracking-[0.18em] uppercase truncate"
+            className="font-display-mono text-[11px] font-semibold tracking-wide truncate"
             style={{ color: 'var(--c-text)' }}
           >
             {sensorId}
           </span>
           <span
-            className="inline-flex items-center gap-[5px] shrink-0 font-mono text-[9.5px] tracking-[0.14em] uppercase"
+            className="inline-flex items-center gap-[5px] shrink-0 font-mono text-[10px] font-medium"
             style={{ color: statusCssVar }}
           >
             <span
@@ -128,7 +128,7 @@ export function SensorCard({
 
         {/* ── Row 2: location ── */}
         <p
-          className="font-mono text-[9.5px] tracking-wider truncate mt-[3px] mb-4"
+          className="font-mono text-[11px] truncate mt-[3px] mb-4"
           style={{ color: 'var(--c-text-2)' }}
         >
           {location ?? 'Location unknown'}
@@ -136,7 +136,7 @@ export function SensorCard({
 
         {/* ── Level bar ── */}
         <div
-          aria-label={`Signal level: ${loudnessDb !== null ? loudnessDb.toFixed(1) + ' dBFS' : 'no data'}`}
+          aria-label={`Signal level: ${loudnessDb !== null ? loudnessDb.toFixed(1) + ' dBA' : 'no data'}`}
           className="w-full h-[28px] rounded-lg overflow-hidden mb-[6px]"
           style={{ backgroundColor: 'var(--c-level-track)' }}
         >
@@ -151,12 +151,12 @@ export function SensorCard({
           />
         </div>
 
-        {/* dBFS scale ticks */}
+        {/* dBA scale ticks */}
         <div className="flex justify-between mb-3">
-          {['-80', '-60', '-40', '-20', '0'].map((v) => (
+          {['20', '40', '60', '80', '100'].map((v) => (
             <span
               key={v}
-              className="font-mono text-[8px] tabular-nums"
+              className="font-mono text-[10px] tabular-nums"
               style={{ color: 'var(--c-scale-tick)' }}
             >
               {v}
@@ -167,7 +167,7 @@ export function SensorCard({
         {/* ── dB number ── */}
         <div className="flex items-baseline justify-center gap-[7px] mb-3">
           <span
-            className={['db-number font-display-mono text-[1.8rem] leading-none tabular-nums select-none', flash ? 'db-flash' : ''].join(' ')}
+            className={['db-number font-display-mono text-[1.8rem] font-semibold leading-none tabular-nums select-none', flash ? 'db-flash' : ''].join(' ')}
             style={{
               color: hasLiveData
                 ? 'var(--c-cyan)'
@@ -180,17 +180,17 @@ export function SensorCard({
             {loudnessDb !== null ? loudnessDb.toFixed(1) : '\u2014'}
           </span>
           <span
-            className="font-mono text-[9.5px] tracking-[0.22em] uppercase pb-[2px]"
+            className="font-mono text-[10px] font-medium pb-[2px]"
             style={{ color: hasLiveData ? 'var(--c-cyan-dim)' : 'var(--c-text-3)' }}
           >
-            dBFS
+            dBA
           </span>
         </div>
 
         {/* Stale indicator */}
         {isDbStale && loudnessDb !== null && (
           <p
-            className="font-mono text-[8.5px] tracking-[0.2em] uppercase text-center -mt-1 mb-2"
+            className="font-mono text-[10px] font-medium text-center -mt-1 mb-2"
             style={{ color: 'var(--c-text-3)' }}
           >
             · stale ·
@@ -202,7 +202,7 @@ export function SensorCard({
           className="flex items-center justify-between pt-3 mt-auto"
           style={{ borderTop: '1px solid var(--c-divider)' }}
         >
-          <div className="font-mono text-[9.5px]">
+          <div className="font-mono text-[11px]">
             {batteryPercent === null ? (
               <span style={{ color: 'var(--c-text-3)' }}>no battery</span>
             ) : batteryLow ? (
@@ -219,7 +219,7 @@ export function SensorCard({
           </div>
 
           <span
-            className="font-mono text-[9.5px] tabular-nums"
+            className="font-mono text-[11px] tabular-nums"
             style={{ color: 'var(--c-text-2)' }}
           >
             {relTime}

@@ -8,6 +8,9 @@ import torchaudio.transforms as T
 class AudioProcessor:
     """Process raw PCM audio data for inference."""
 
+    # SPH0645 sensitivity: -26 dBFS at 94 dB SPL → calibration offset = +120 dB
+    _SPH0645_CALIBRATION_DB = 120.0
+
     def __init__(
         self,
         sample_rate: int = 16000,
@@ -51,35 +54,73 @@ class AudioProcessor:
         Returns:
             Tensor of shape (1, num_samples)
         """
-        # Unpack 16-bit signed integers (little-endian)
         num_samples = len(pcm_bytes) // 2
         samples = struct.unpack(f"<{num_samples}h", pcm_bytes)
 
-        # Convert to numpy and normalize to [-1, 1]
+        # Normalize to [-1, 1]
         waveform = np.array(samples, dtype=np.float32) / 32768.0
 
-        # Convert to torch tensor with channel dimension
         return torch.from_numpy(waveform).unsqueeze(0)
 
-    def compute_loudness_db(self, waveform: torch.Tensor) -> float:
+    @staticmethod
+    def _a_weighting_weights(freqs: np.ndarray) -> np.ndarray:
         """
-        Compute loudness in dBFS (decibels relative to full scale).
+        IEC 61672:2003 A-weighting frequency response.
+
+        Returns linear amplitude weights (not dB), normalized so that
+        A(1000 Hz) = 1.0 (0 dB at the standard 1 kHz reference).
+        DC bin (freq=0) is zeroed to suppress the DC component.
+        """
+        # Avoid division by zero at DC; use inf so the result is 0 there
+        f2 = np.where(freqs == 0, np.inf, freqs ** 2)
+
+        ra = (12200.0 ** 2 * freqs ** 4) / (
+            (f2 + 20.6 ** 2)
+            * np.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2))
+            * (f2 + 12200.0 ** 2)
+        )
+
+        # Normalize to 0 dB at 1 kHz
+        ra_1k = (12200.0 ** 2 * 1000.0 ** 4) / (
+            (1000.0 ** 2 + 20.6 ** 2)
+            * np.sqrt((1000.0 ** 2 + 107.7 ** 2) * (1000.0 ** 2 + 737.9 ** 2))
+            * (1000.0 ** 2 + 12200.0 ** 2)
+        )
+
+        return ra / ra_1k
+
+    def compute_loudness_dba(self, waveform: torch.Tensor) -> float:
+        """
+        Compute A-weighted loudness in absolute dBA (sound pressure level).
+
+        Applies IEC 61672:2003 A-weighting in the frequency domain using an FFT,
+        then adds the SPH0645 calibration offset (+120 dB) to convert from
+        dBFS(A) to absolute dBA SPL.
 
         Args:
-            waveform: Audio tensor of shape (1, num_samples)
+            waveform: Audio tensor of shape (1, num_samples), normalized to [-1, 1]
 
         Returns:
-            Loudness in dBFS (0 is maximum, negative values are quieter)
+            Loudness in dBA. Returns 0.0 for silence.
         """
-        # Compute RMS
-        rms = torch.sqrt(torch.mean(waveform**2))
+        # Use float64 for FFT precision
+        samples = waveform.squeeze().numpy().astype(np.float64)
+        n = len(samples)
 
-        # Convert to dB (with small epsilon to avoid log(0))
+        freqs = np.fft.rfftfreq(n, d=1.0 / self.sample_rate)
+        spectrum = np.fft.rfft(samples)
+
+        weights = self._a_weighting_weights(freqs)
+        weighted_spectrum = spectrum * weights
+
+        # RMS via Parseval's theorem: sum(|X[k]|²) / N² gives mean square
+        rms = np.sqrt(np.sum(np.abs(weighted_spectrum) ** 2) / n ** 2)
+
         if rms < 1e-10:
-            return -100.0  # Essentially silence
+            return 0.0
 
-        db = 20 * torch.log10(rms).item()
-        return round(db, 2)
+        dbfs_a = 20.0 * np.log10(rms)
+        return round(dbfs_a + self._SPH0645_CALIBRATION_DB, 2)
 
     def preprocess(self, pcm_bytes: bytes) -> tuple[torch.Tensor, float]:
         """
@@ -89,19 +130,13 @@ class AudioProcessor:
             pcm_bytes: Raw PCM data (16-bit signed, 16kHz, mono)
 
         Returns:
-            Tuple of (MelSpectrogram tensor of shape (1, n_mels, time_steps), loudness_db)
+            Tuple of (MelSpectrogram tensor of shape (1, n_mels, time_steps), loudness_dba)
         """
-        # Convert PCM bytes to tensor
         waveform = self.pcm_to_tensor(pcm_bytes)
 
-        # Compute loudness
-        loudness_db = self.compute_loudness_db(waveform)
+        loudness_dba = self.compute_loudness_dba(waveform)
 
-        # Extract MelSpectrogram features
         mel_spec = self.mel_transform(waveform)
-
-        # Convert to dB scale
         mel_spec_db = self.amplitude_to_db(mel_spec)
 
-        # Shape is now (1, n_mels, time) - keep channel dimension for Conv2D input
-        return mel_spec_db, loudness_db
+        return mel_spec_db, loudness_dba

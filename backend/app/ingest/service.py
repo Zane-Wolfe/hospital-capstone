@@ -39,7 +39,7 @@ async def process_audio_segment(
             "status": "error",
             "segment_id": segment_id,
             "detected_events": [],
-            "loudness_db": 0.0,
+            "loudness_dba": 0.0,
             "processing_time_ms": 0.0,
             "error": "Model not loaded",
         }
@@ -57,20 +57,20 @@ async def process_audio_segment(
             "status": "error",
             "segment_id": segment_id,
             "detected_events": [],
-            "loudness_db": 0.0,
+            "loudness_dba": 0.0,
             "processing_time_ms": (time.perf_counter() - start_time) * 1000,
             "error": str(e),
         }
 
     detected_events = result["detected_events"]
-    loudness_db = result["loudness_db"]
+    loudness_dba = result["loudness_dba"]
     timestamp = datetime.now(timezone.utc)
 
     # Always write audio level for continuous dB tracking in dashboards
     write_audio_level(
         sensor_id=sensor_id,
         location=location,
-        loudness_db=loudness_db,
+        loudness_dba=loudness_dba,
         timestamp=timestamp,
     )
 
@@ -80,7 +80,7 @@ async def process_audio_segment(
             sensor_id=sensor_id,
             location=location,
             detected_events=detected_events,
-            loudness_db=loudness_db,
+            loudness_dba=loudness_dba,
             timestamp=timestamp,
         )
         logger.info(
@@ -96,7 +96,7 @@ async def process_audio_segment(
                 "location": location,
                 "event_type": event["label"],
                 "confidence": event["confidence"],
-                "loudness_db": loudness_db,
+                "loudness_dba": loudness_dba,
             })
 
     processing_time_ms = (time.perf_counter() - start_time) * 1000
@@ -105,6 +105,6 @@ async def process_audio_segment(
         "status": "processed",
         "segment_id": segment_id,
         "detected_events": detected_events,
-        "loudness_db": loudness_db,
+        "loudness_dba": loudness_dba,
         "processing_time_ms": round(processing_time_ms, 2),
     }

@@ -21,8 +21,8 @@ export default {
         },
       },
       fontFamily: {
-        'display-mono': ['"Share Tech Mono"', 'monospace'],
-        mono: ['"DM Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        'display-mono': ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

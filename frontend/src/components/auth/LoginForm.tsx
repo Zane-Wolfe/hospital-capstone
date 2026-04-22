@@ -31,7 +31,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {error && (
         <div
-          className="px-4 py-3 rounded-lg font-mono text-[10.5px] tracking-wide"
+          className="px-4 py-3 rounded-lg font-mono text-[12px]"
           style={{
             background: 'var(--c-error-bg)',
             border: '1px solid var(--c-error-border)',
@@ -46,7 +46,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <div key={field} className="flex flex-col gap-[7px]">
           <label
             htmlFor={field}
-            className="font-mono text-[9.5px] tracking-[0.2em] uppercase"
+            className="font-mono text-[12px] font-medium capitalize"
             style={{ color: 'var(--c-text-2)' }}
           >
             {field}
@@ -69,11 +69,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               borderRadius: '8px',
               color: 'var(--c-text)',
               fontFamily: 'inherit',
-              fontSize: '12px',
-              letterSpacing: '0.04em',
+              fontSize: '13px',
+              letterSpacing: '0.01em',
               padding: '10px 12px',
               outline: 'none',
-              boxShadow: focusedField === field ? '0 0 0 3px rgba(0,196,106,0.08)' : 'none',
+              boxShadow: focusedField === field ? '0 0 0 3px rgba(59,130,246,0.10)' : 'none',
               transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
             }}
           />
@@ -83,9 +83,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full font-display-mono text-[11px] tracking-[0.2em] uppercase rounded-lg py-[11px] transition-all duration-150"
+        className="w-full font-display-mono text-[13px] font-semibold rounded-lg py-[11px] transition-all duration-150"
         style={{
-          background: isLoading ? 'var(--c-green)' : 'var(--c-green)',
+          background: isLoading ? 'var(--c-cyan)' : 'var(--c-cyan)',
           color: 'var(--c-btn-login-text)',
           opacity: isLoading ? 0.6 : 1,
           cursor: isLoading ? 'not-allowed' : 'pointer',

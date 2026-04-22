@@ -24,13 +24,13 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-8">
           <LoginWaveform />
           <h1
-            className="font-display-mono text-[11px] tracking-[0.3em] uppercase text-center mt-5"
+            className="font-display-mono text-[18px] font-semibold text-center mt-5"
             style={{ color: 'var(--c-text-2)' }}
           >
             Hospital Audio Monitor
           </h1>
           <p
-            className="font-mono text-[9px] tracking-[0.2em] uppercase mt-2"
+            className="font-mono text-[12px] mt-2"
             style={{ color: 'var(--c-text-3)' }}
           >
             Secure Dashboard Access
@@ -49,7 +49,7 @@ export default function LoginPage() {
           {/* Green accent line */}
           <div
             className="h-[1px] w-full"
-            style={{ background: 'linear-gradient(90deg, transparent, var(--c-green), transparent)' }}
+            style={{ background: 'linear-gradient(90deg, transparent, var(--c-cyan), transparent)' }}
           />
           <div className="px-7 py-8">
             <LoginForm onSuccess={() => navigate('/')} />
@@ -57,7 +57,7 @@ export default function LoginPage() {
         </div>
 
         <p
-          className="font-mono text-[8.5px] tracking-[0.25em] uppercase text-center mt-6"
+          className="font-mono text-[11px] text-center mt-6"
           style={{ color: 'var(--c-text-3)' }}
         >
           Authorized Personnel Only
@@ -82,7 +82,7 @@ function LoginWaveform() {
             height={h}
             rx="2.5"
             style={{
-              fill: 'var(--c-green)',
+              fill: 'var(--c-cyan)',
               opacity: 0.3 + (h / 26) * 0.65,
             }}
           />

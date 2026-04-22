@@ -14,7 +14,7 @@ export interface AudioEvent {
   location: string
   event_type: string
   confidence: number
-  loudness_db: number
+  loudness_dba: number
 }
 
 export interface WebSocketMessage {

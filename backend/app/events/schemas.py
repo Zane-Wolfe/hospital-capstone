@@ -8,7 +8,7 @@ class AudioEvent(BaseModel):
     location: str
     event_type: str
     confidence: float
-    loudness_db: float
+    loudness_dba: float
 
 
 class EventStats(BaseModel):

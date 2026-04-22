@@ -3,7 +3,7 @@ import { useWebSocket } from './useWebSocket'
 import type { AudioEvent, DeviceMetrics } from '../types'
 
 export interface SensorDbEntry {
-  loudness_db: number
+  loudness_dba: number
   timestamp: string
   isStale: boolean
 }
@@ -47,7 +47,7 @@ export function useSensorDbLevels(options: UseSensorDbLevelsOptions = {}): {
       setDbLevels((prev) => {
         const next = new Map(prev)
         next.set(event.sensor_id, {
-          loudness_db: event.loudness_db,
+          loudness_dba: event.loudness_dba,
           timestamp: event.time,
           isStale: false,
         })
@@ -75,7 +75,7 @@ export function useSensorDbLevels(options: UseSensorDbLevelsOptions = {}): {
         for (const [id, e] of latest) {
           const age = now - new Date(e.time).getTime()
           next.set(id, {
-            loudness_db: e.loudness_db,
+            loudness_dba: e.loudness_dba,
             timestamp: e.time,
             isStale: age > STALE_THRESHOLD_MS,
           })
